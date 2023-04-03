@@ -48,7 +48,7 @@ end_of_line = crlf
 # Sort using and Import directives with System.* appearing first
 dotnet_sort_system_directives_first = true
 # Put a blank line between System.* and Microsoft.*
-dotnet_separate_import_directive_groups = true
+dotnet_separate_import_directive_groups = false
 
 # Avoid "this." and "Me." if not necessary
 dotnet_style_qualification_for_field = false:suggestion

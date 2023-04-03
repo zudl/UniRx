@@ -572,6 +572,16 @@ namespace UniRx
             return source.HasValue ? source.Skip(1) : source;
         }
 
+        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveProperty<T> reactiveProperty)
+        {
+            return observable.SubscribeWithState(reactiveProperty, (value, prop) => prop.Value = value);
+        }
+
+        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveProperty<T> reactiveProperty)
+        {
+            return observable.Do(value => reactiveProperty.Value = value);
+        }
+
         // for multiple toggle or etc..
 
         /// <summary>

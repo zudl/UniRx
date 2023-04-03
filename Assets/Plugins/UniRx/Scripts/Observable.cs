@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Threading;
 using UniRx.InternalUtil;
 using UniRx.Operators;
 
@@ -63,6 +61,16 @@ namespace UniRx
         public static IObservable<T> Where<T>(this IObservable<T> source, Func<T, int, bool> predicate)
         {
             return new WhereObservable<T>(source, predicate);
+        }
+
+        public static IObservable<T> WhereNotNull<T>(this IObservable<T> observable) where T : class
+        {
+            return observable.Where(v => v != null);
+        }
+
+        public static IObservable<T> WhereNull<T>(this IObservable<T> observable) where T : class
+        {
+            return observable.Where(v => v == null);
         }
 
         /// <summary>

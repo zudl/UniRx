@@ -13,38 +13,6 @@ namespace UniRx
 {
     public static partial class ObserveExtensions
     {
-        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveProperty<T> reactiveProperty) {
-            return observable.SubscribeWithState(reactiveProperty, (value, prop) => prop.Value = value);
-        }
-
-        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveProperty<T> reactiveProperty) {
-            return observable.Do(value => reactiveProperty.Value = value);
-        }
-
-        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveCommand<T> reactiveCommand) {
-            return observable.SubscribeWithState(reactiveCommand, (value, cmd) => cmd.Execute(value));
-        }
-
-        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveCommand<Unit> reactiveCommand) {
-            return observable.SubscribeWithState(reactiveCommand, (_, cmd) => cmd.Execute(Unit.Default));
-        }
-
-        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveCommand<T> reactiveCommand) {
-            return observable.Do(value => reactiveCommand.Execute(value));
-        }
-
-        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveCommand<Unit> reactiveCommand) {
-            return observable.Do(value => reactiveCommand.Execute(Unit.Default));
-        }
-
-        public static IObservable<T> WhereNotNull<T>(this IObservable<T> observable) where T : class {
-            return observable.Where(v => v != null);
-        }
-
-        public static IObservable<T> WhereNull<T>(this IObservable<T> observable) where T : class {
-            return observable.Where(v => v == null);
-        }
-
         /// <summary>
         /// Publish target property when value is changed. If source is destroyed/destructed, publish OnCompleted.
         /// </summary>

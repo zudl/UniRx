@@ -315,11 +315,31 @@ namespace UniRx
         }
 
         /// <summary>
-        /// Create parametered comamnds. CanExecute is changed from canExecute sequence.
+        /// Create parametered commands. CanExecute is changed from canExecute sequence.
         /// </summary>
         public static ReactiveCommand<T> ToReactiveCommand<T>(this IObservable<bool> canExecuteSource, bool initialValue = true)
         {
             return new ReactiveCommand<T>(canExecuteSource, initialValue);
+        }
+
+        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveCommand<T> reactiveCommand)
+        {
+            return observable.SubscribeWithState(reactiveCommand, (value, cmd) => cmd.Execute(value));
+        }
+
+        public static IDisposable Subscribe<T>(this IObservable<T> observable, IReactiveCommand<Unit> reactiveCommand)
+        {
+            return observable.SubscribeWithState(reactiveCommand, (_, cmd) => cmd.Execute(Unit.Default));
+        }
+
+        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveCommand<T> reactiveCommand)
+        {
+            return observable.Do(value => reactiveCommand.Execute(value));
+        }
+
+        public static IObservable<T> Do<T>(this IObservable<T> observable, IReactiveCommand<Unit> reactiveCommand)
+        {
+            return observable.Do(value => reactiveCommand.Execute(Unit.Default));
         }
 
 #if CSHARP_7_OR_LATER || (UNITY_2018_3_OR_NEWER && (NET_STANDARD_2_0 || NET_4_6))
