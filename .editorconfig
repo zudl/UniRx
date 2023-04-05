@@ -122,14 +122,14 @@ dotnet_naming_rule.static_readonly_fields_should_be_pascal_case.severity        
 # Comment this group and uncomment out the next group if you don't want _ prefixed fields.
 
 # Private instance fields are camelCased with an _ like _myField
-#dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.symbols   = private_field_symbols
-#dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.style     = camel_case_and_prefix_with_underscore_style
-#dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.severity  = warning
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.symbols   = private_field_symbols
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.style     = camel_case_and_prefix_with_underscore_style
+dotnet_naming_rule.private_instance_fields_must_be_camel_cased_and_prefixed_with_underscore.severity  = warning
 
 # Private instance fields are camelCased
-dotnet_naming_rule.private_instance_fields_must_be_camel_cased.symbols                                = private_field_symbols
-dotnet_naming_rule.private_instance_fields_must_be_camel_cased.style                                  = camel_case_style
-dotnet_naming_rule.private_instance_fields_must_be_camel_cased.severity                               = warning
+#dotnet_naming_rule.private_instance_fields_must_be_camel_cased.symbols                                = private_field_symbols
+#dotnet_naming_rule.private_instance_fields_must_be_camel_cased.style                                  = camel_case_style
+#dotnet_naming_rule.private_instance_fields_must_be_camel_cased.severity                               = warning
 
 # Symbols
 dotnet_naming_symbols.externally_visible_symbols.applicable_kinds                                     = class,struct,interface,enum,property,method,field,event,delegate

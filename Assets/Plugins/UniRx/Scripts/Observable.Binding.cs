@@ -5,9 +5,9 @@ namespace UniRx
 {
     public static partial class Observable
     {
-        public static IConnectableObservable<T> Multicast<T>(this IObservable<T> source, ISubject<T> subject)
+        public static IConnectableObservable<TResult> Multicast<TSource, TResult>(this IObservable<TSource> source, ISubject<TSource, TResult> subject)
         {
-            return new ConnectableObservable<T>(source, subject);
+            return new ConnectableObservable<TSource, TResult>(source, subject);
         }
 
         public static IConnectableObservable<T> Publish<T>(this IObservable<T> source)

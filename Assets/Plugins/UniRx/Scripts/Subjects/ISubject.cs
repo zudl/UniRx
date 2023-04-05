@@ -1,14 +1,16 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
+﻿// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT License.
+// See the LICENSE file in the project root for more information.
+
+using System;
 
 namespace UniRx
 {
-    public interface ISubject<TSource, TResult> : IObserver<TSource>, IObservable<TResult>
-    {
-    }
-
-    public interface ISubject<T> : ISubject<T, T>, IObserver<T>, IObservable<T>
+    /// <summary>
+    /// Represents an object that is both an observable sequence as well as an observer.
+    /// </summary>
+    /// <typeparam name="T">The type of the elements processed by the subject.</typeparam>
+    public interface ISubject<T> : ISubject<T, T>, IObservable<T>
     {
     }
 }

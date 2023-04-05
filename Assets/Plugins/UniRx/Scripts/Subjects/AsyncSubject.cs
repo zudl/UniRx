@@ -1,257 +1,397 @@
 ﻿using System;
-using System.Collections.Generic;
-using UniRx.InternalUtil;
-
-#if (NET_4_6 || NET_STANDARD_2_0)
 using System.Runtime.CompilerServices;
 using System.Threading;
-#endif
+using UniRx.InternalUtil;
 
 namespace UniRx
 {
-    public sealed class AsyncSubject<T> : ISubject<T>, IOptimizedObservable<T>, IDisposable
-#if (NET_4_6 || NET_STANDARD_2_0)
-        , INotifyCompletion
-#endif
+    /// <summary>
+    /// Represents the result of an asynchronous operation.
+    /// The last value before the OnCompleted notification, or the error received through OnError, is sent to all subscribed observers.
+    /// </summary>
+    /// <typeparam name="T">The type of the elements processed by the subject.</typeparam>
+    public sealed class AsyncSubject<T> : SubjectBase<T>, INotifyCompletion
     {
-        object observerLock = new object();
+        #region Fields
 
-        T lastValue;
-        bool hasValue;
-        bool isStopped;
-        bool isDisposed;
-        Exception lastError;
-        IObserver<T> outObserver = EmptyObserver<T>.Instance;
+        private AsyncSubjectDisposable[] _observers;
+        private T _value;
+        private bool _hasValue;
+        private Exception _exception;
+
+        /// <summary>
+        /// A pre-allocated empty array indicating the AsyncSubject has terminated
+        /// </summary>
+        private static readonly AsyncSubjectDisposable[] Terminated = new AsyncSubjectDisposable[0];
+
+        /// <summary>
+        /// A pre-allocated empty array indicating the AsyncSubject has terminated
+        /// </summary>
+        private static readonly AsyncSubjectDisposable[] Disposed = new AsyncSubjectDisposable[0];
+
+        #endregion
+
+        #region Constructors
+
+        /// <summary>
+        /// Creates a subject that can only receive one value and that value is cached for all future observations.
+        /// </summary>
+        public AsyncSubject()
+        {
+            _observers = new AsyncSubjectDisposable[0];
+        }
+
+        #endregion
+
+        #region Properties
+
+        /// <summary>
+        /// Indicates whether the subject has observers subscribed to it.
+        /// </summary>
+        public override bool HasObservers => _observers.Length != 0;
+
+        /// <summary>
+        /// Indicates whether the subject has been disposed.
+        /// </summary>
+        public override bool IsDisposed => Volatile.Read(ref _observers) == Disposed;
 
         public T Value
         {
-            get
-            {
-                ThrowIfDisposed();
-                if (!isStopped) throw new InvalidOperationException("AsyncSubject is not completed yet");
-                if (lastError != null) lastError.Throw();
-                return lastValue;
-            }
+	        get
+	        {
+		        var observers = Volatile.Read(ref _observers);
+		        if (observers == Disposed)
+		        {
+			        ThrowDisposed();
+		        }
+		        else if (observers != Terminated)
+		        {
+			        throw new InvalidOperationException("AsyncSubject is not completed yet");
+		        }
+
+		        var ex = _exception;
+			    ex?.Throw();
+
+		        return _value;
+	        }
         }
 
-        public bool HasObservers
+        #endregion
+
+        #region Methods
+
+        #region IObserver<T> implementation
+
+        /// <summary>
+        /// Notifies all subscribed observers about the end of the sequence, also causing the last received value to be sent out (if any).
+        /// </summary>
+        public override void OnCompleted()
         {
-            get
+            for (; ; )
             {
-                return !(outObserver is EmptyObserver<T>) && !isStopped && !isDisposed;
-            }
-        }
-
-        public bool IsCompleted { get { return isStopped; } }
-
-        public void OnCompleted()
-        {
-            IObserver<T> old;
-            T v;
-            bool hv;
-            lock (observerLock)
-            {
-                ThrowIfDisposed();
-                if (isStopped) return;
-
-                old = outObserver;
-                outObserver = EmptyObserver<T>.Instance;
-                isStopped = true;
-                v = lastValue;
-                hv = hasValue;
-            }
-
-            if (hv)
-            {
-                old.OnNext(v);
-                old.OnCompleted();
-            }
-            else
-            {
-                old.OnCompleted();
-            }
-        }
-
-        public void OnError(Exception error)
-        {
-            if (error == null) throw new ArgumentNullException("error");
-
-            IObserver<T> old;
-            lock (observerLock)
-            {
-                ThrowIfDisposed();
-                if (isStopped) return;
-
-                old = outObserver;
-                outObserver = EmptyObserver<T>.Instance;
-                isStopped = true;
-                lastError = error;
-            }
-
-            old.OnError(error);
-        }
-
-        public void OnNext(T value)
-        {
-            lock (observerLock)
-            {
-                ThrowIfDisposed();
-                if (isStopped) return;
-
-                this.hasValue = true;
-                this.lastValue = value;
-            }
-        }
-
-        public IDisposable Subscribe(IObserver<T> observer)
-        {
-            if (observer == null) throw new ArgumentNullException("observer");
-
-            var ex = default(Exception);
-            var v = default(T);
-            var hv = false;
-
-            lock (observerLock)
-            {
-                ThrowIfDisposed();
-                if (!isStopped)
+                var observers = Volatile.Read(ref _observers);
+                if (observers == Disposed)
                 {
-                    var listObserver = outObserver as ListObserver<T>;
-                    if (listObserver != null)
+                    _exception = null;
+                    ThrowDisposed();
+                    break;
+                }
+                if (observers == Terminated)
+                {
+                    break;
+                }
+                if (Interlocked.CompareExchange(ref _observers, Terminated, observers) == observers)
+                {
+                    var hasValue = _hasValue;
+                    if (hasValue)
                     {
-                        outObserver = listObserver.Add(observer);
+                        var value = _value;
+
+                        foreach (var o in observers)
+                        {
+                            if (!o.IsDisposed())
+                            {
+                                o.Downstream.OnNext(value);
+                                o.Downstream.OnCompleted();
+                            }
+                        }
                     }
                     else
                     {
-                        var current = outObserver;
-                        if (current is EmptyObserver<T>)
+                        foreach (var o in observers)
                         {
-                            outObserver = observer;
-                        }
-                        else
-                        {
-                            outObserver = new ListObserver<T>(new ImmutableList<IObserver<T>>(new[] { current, observer }));
+                            if (!o.IsDisposed())
+                            {
+                                o.Downstream.OnCompleted();
+                            }
                         }
                     }
+                }
+            }
+        }
 
-                    return new Subscription(this, observer);
+        /// <summary>
+        /// Notifies all subscribed observers about the exception.
+        /// </summary>
+        /// <param name="error">The exception to send to all observers.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="error"/> is <c>null</c>.</exception>
+        public override void OnError(Exception error)
+        {
+            if (error == null)
+            {
+                throw new ArgumentNullException(nameof(error));
+            }
+
+            for (; ; )
+            {
+                var observers = Volatile.Read(ref _observers);
+                if (observers == Disposed)
+                {
+                    _exception = null;
+                    _value = default(T);
+                    ThrowDisposed();
+                    break;
+                }
+                if (observers == Terminated)
+                {
+                    break;
+                }
+                _exception = error;
+                if (Interlocked.CompareExchange(ref _observers, Terminated, observers) == observers)
+                {
+                    foreach (var o in observers)
+                    {
+                        if (!o.IsDisposed())
+                        {
+                            o.Downstream.OnError(error);
+                        }
+                    }
+                }
+            }
+
+        }
+
+        /// <summary>
+        /// Sends a value to the subject. The last value received before successful termination will be sent to all subscribed and future observers.
+        /// </summary>
+        /// <param name="value">The value to store in the subject.</param>
+        public override void OnNext(T value)
+        {
+            var observers = Volatile.Read(ref _observers);
+            if (observers == Disposed)
+            {
+                _value = default(T);
+                _exception = null;
+                ThrowDisposed();
+                return;
+            }
+            if (observers == Terminated)
+            {
+                return;
+            }
+
+            _value = value;
+            _hasValue = true;
+        }
+
+        #endregion
+
+        #region IObservable<T> implementation
+
+        /// <summary>
+        /// Subscribes an observer to the subject.
+        /// </summary>
+        /// <param name="observer">Observer to subscribe to the subject.</param>
+        /// <returns>Disposable object that can be used to unsubscribe the observer from the subject.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="observer"/> is <c>null</c>.</exception>
+        public override IDisposable Subscribe(IObserver<T> observer)
+        {
+            if (observer == null)
+            {
+                throw new ArgumentNullException(nameof(observer));
+            }
+
+            var parent = new AsyncSubjectDisposable(this, observer);
+
+            if (!Add(parent))
+            {
+                var ex = _exception;
+                if (ex != null)
+                {
+                    observer.OnError(ex);
+                }
+                else
+                {
+                    if (_hasValue)
+                    {
+                        observer.OnNext(_value);
+                    }
+                    observer.OnCompleted();
+                }
+                return Disposable.Empty;
+            }
+
+            return parent;
+        }
+
+        private bool Add(AsyncSubjectDisposable inner)
+        {
+            for (; ; )
+            {
+                var a = Volatile.Read(ref _observers);
+                if (a == Disposed)
+                {
+                    _value = default(T);
+                    _exception = null;
+                    ThrowDisposed();
+                    return true;
                 }
 
-                ex = lastError;
-                v = lastValue;
-                hv = hasValue;
-            }
+                if (a == Terminated)
+                {
+                    return false;
+                }
 
-            if (ex != null)
-            {
-                observer.OnError(ex);
-            }
-            else if (hv)
-            {
-                observer.OnNext(v);
-                observer.OnCompleted();
-            }
-            else
-            {
-                observer.OnCompleted();
-            }
-
-            return Disposable.Empty;
-        }
-
-        public void Dispose()
-        {
-            lock (observerLock)
-            {
-                isDisposed = true;
-                outObserver = DisposedObserver<T>.Instance;
-                lastError = null;
-                lastValue = default(T);
+                var n = a.Length;
+                var b = new AsyncSubjectDisposable[n + 1];
+                Array.Copy(a, 0, b, 0, n);
+                b[n] = inner;
+                if (Interlocked.CompareExchange(ref _observers, b, a) == a)
+                {
+                    return true;
+                }
             }
         }
 
-        void ThrowIfDisposed()
+        private void Remove(AsyncSubjectDisposable inner)
         {
-            if (isDisposed) throw new ObjectDisposedException("");
-        }
-
-        public bool IsRequiredSubscribeOnCurrentThread()
-        {
-            return false;
-        }
-
-        class Subscription : IDisposable
-        {
-            readonly object gate = new object();
-            AsyncSubject<T> parent;
-            IObserver<T> unsubscribeTarget;
-
-            public Subscription(AsyncSubject<T> parent, IObserver<T> unsubscribeTarget)
+            for (; ; )
             {
-                this.parent = parent;
-                this.unsubscribeTarget = unsubscribeTarget;
+                var a = Volatile.Read(ref _observers);
+
+                var n = a.Length;
+
+                if (n == 0)
+                {
+                    break;
+                }
+
+                var j = -1;
+
+                for (var i = 0; i < n; i++)
+                {
+                    if (a[i] == inner)
+                    {
+                        j = i;
+                        break;
+                    }
+                }
+
+                if (j < 0)
+                {
+                    break;
+                }
+
+                var b = default(AsyncSubjectDisposable[]);
+                if (n == 1)
+                {
+                    b = new AsyncSubjectDisposable[0];
+                }
+                else
+                {
+                    b = new AsyncSubjectDisposable[n - 1];
+                    Array.Copy(a, 0, b, 0, j);
+                    Array.Copy(a, j + 1, b, j, n - j - 1);
+                }
+
+                if (Interlocked.CompareExchange(ref _observers, b, a) == a)
+                {
+                    break;
+                }
+            }
+        }
+
+        /// <summary>
+        /// A disposable connecting the AsyncSubject and an IObserver.
+        /// </summary>
+        private sealed class AsyncSubjectDisposable : IDisposable
+        {
+            internal readonly IObserver<T> Downstream;
+            private AsyncSubject<T> _parent;
+
+            public AsyncSubjectDisposable(AsyncSubject<T> parent, IObserver<T> downstream)
+            {
+                _parent = parent;
+                Downstream = downstream;
             }
 
             public void Dispose()
             {
-                lock (gate)
-                {
-                    if (parent != null)
-                    {
-                        lock (parent.observerLock)
-                        {
-                            var listObserver = parent.outObserver as ListObserver<T>;
-                            if (listObserver != null)
-                            {
-                                parent.outObserver = listObserver.Remove(unsubscribeTarget);
-                            }
-                            else
-                            {
-                                parent.outObserver = EmptyObserver<T>.Instance;
-                            }
+                Interlocked.Exchange(ref _parent, null)?.Remove(this);
+            }
 
-                            unsubscribeTarget = null;
-                            parent = null;
-                        }
-                    }
-                }
+            internal bool IsDisposed()
+            {
+                return Volatile.Read(ref _parent) == null;
             }
         }
 
+        #endregion
 
-#if (NET_4_6 || NET_STANDARD_2_0)
+        #region IDisposable implementation
+
+        private void ThrowDisposed()
+        {
+            throw new ObjectDisposedException(string.Empty);
+        }
+
+        /// <summary>
+        /// Unsubscribe all observers and release resources.
+        /// </summary>
+        public override void Dispose()
+        {
+            if (Interlocked.Exchange(ref _observers, Disposed) != Disposed)
+            {
+                _exception = null;
+                _value = default(T);
+                _hasValue = false;
+            }
+        }
+
+        #endregion
+
+        #region Await support
 
         /// <summary>
         /// Gets an awaitable object for the current AsyncSubject.
         /// </summary>
         /// <returns>Object that can be awaited.</returns>
-        public AsyncSubject<T> GetAwaiter()
-        {
-            return this;
-        }
+        public AsyncSubject<T> GetAwaiter() => this;
 
         /// <summary>
         /// Specifies a callback action that will be invoked when the subject completes.
         /// </summary>
         /// <param name="continuation">Callback action that will be invoked when the subject completes.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="continuation"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="continuation"/> is <c>null</c>.</exception>
         public void OnCompleted(Action continuation)
         {
             if (continuation == null)
-                throw new ArgumentNullException("continuation");
+            {
+                throw new ArgumentNullException(nameof(continuation));
+            }
 
-            OnCompleted(continuation, true);
+            OnCompleted(continuation, originalContext: true);
         }
 
-         void OnCompleted(Action continuation, bool originalContext)
+        private void OnCompleted(Action continuation, bool originalContext)
         {
             //
             // [OK] Use of unsafe Subscribe: this type's Subscribe implementation is safe.
             //
-            this.Subscribe/*Unsafe*/(new AwaitObserver(continuation, originalContext));
+            Subscribe/*Unsafe*/(new AwaitObserver(continuation, originalContext));
         }
 
-        class AwaitObserver : IObserver<T>
+        private sealed class AwaitObserver : IObserver<T>
         {
             private readonly SynchronizationContext _context;
             private readonly Action _callback;
@@ -259,24 +399,18 @@ namespace UniRx
             public AwaitObserver(Action callback, bool originalContext)
             {
                 if (originalContext)
+                {
                     _context = SynchronizationContext.Current;
+                }
 
                 _callback = callback;
             }
 
-            public void OnCompleted()
-            {
-                InvokeOnOriginalContext();
-            }
+            public void OnCompleted() => InvokeOnOriginalContext();
 
-            public void OnError(Exception error)
-            {
-                InvokeOnOriginalContext();
-            }
+            public void OnError(Exception error) => InvokeOnOriginalContext();
 
-            public void OnNext(T value)
-            {
-            }
+            public void OnNext(T value) { }
 
             private void InvokeOnOriginalContext()
             {
@@ -299,6 +433,11 @@ namespace UniRx
         }
 
         /// <summary>
+        /// Gets whether the AsyncSubject has completed.
+        /// </summary>
+        public bool IsCompleted => Volatile.Read(ref _observers) == Terminated;
+
+        /// <summary>
         /// Gets the last element of the subject, potentially blocking until the subject completes successfully or exceptionally.
         /// </summary>
         /// <returns>The last element of the subject. Throws an InvalidOperationException if no element was received.</returns>
@@ -306,23 +445,25 @@ namespace UniRx
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1024:UsePropertiesWhereAppropriate", Justification = "Await pattern for C# and VB compilers.")]
         public T GetResult()
         {
-            if (!isStopped)
+            if (Volatile.Read(ref _observers) != Terminated)
             {
-                var e = new ManualResetEvent(false);
-                OnCompleted(() => e.Set(), false);
+                var e = new ManualResetEvent(initialState: false);
+                OnCompleted(() => e.Set(), originalContext: false);
                 e.WaitOne();
             }
 
-            if (lastError != null)
+            _exception?.Throw();
+
+            if (!_hasValue)
             {
-                lastError.Throw();
+                throw new InvalidOperationException("Sequence contains no elements.");
             }
 
-            if (!hasValue)
-                throw new InvalidOperationException("NO_ELEMENTS");
-
-            return lastValue;
+            return _value;
         }
-#endif
+
+        #endregion
+
+        #endregion
     }
 }
