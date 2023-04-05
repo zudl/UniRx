@@ -20,12 +20,12 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             if (observable == null)
             {
-                throw new ArgumentNullException(nameof(observable));
+                throw new ArgumentNullException("observable");
             }
 
             return new AnonymousSubject<TSource, TResult>(observer, observable);
@@ -43,12 +43,12 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             if (observable == null)
             {
-                throw new ArgumentNullException(nameof(observable));
+                throw new ArgumentNullException("observable");
             }
 
             return new AnonymousSubject<T>(observer, observable);
@@ -66,7 +66,7 @@ namespace UniRx
         {
             if (subject == null)
             {
-                throw new ArgumentNullException(nameof(subject));
+                throw new ArgumentNullException("subject");
             }
 
             return new AnonymousSubject<TSource, TResult>((subject as IObserver<TSource>).Synchronize(), subject);
@@ -83,7 +83,7 @@ namespace UniRx
         {
             if (subject == null)
             {
-                throw new ArgumentNullException(nameof(subject));
+                throw new ArgumentNullException("subject");
             }
 
             return new AnonymousSubject<TSource>((subject as IObserver<TSource>).Synchronize(), subject);
@@ -102,12 +102,12 @@ namespace UniRx
         {
             if (subject == null)
             {
-                throw new ArgumentNullException(nameof(subject));
+                throw new ArgumentNullException("subject");
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                throw new ArgumentNullException("scheduler");
             }
 
             return new AnonymousSubject<TSource, TResult>((subject as IObserver<TSource>).Synchronize(), subject.ObserveOn(scheduler));
@@ -125,12 +125,12 @@ namespace UniRx
         {
             if (subject == null)
             {
-                throw new ArgumentNullException(nameof(subject));
+                throw new ArgumentNullException("subject");
             }
 
             if (scheduler == null)
             {
-                throw new ArgumentNullException(nameof(scheduler));
+                throw new ArgumentNullException("scheduler");
             }
 
             return new AnonymousSubject<TSource>((subject as IObserver<TSource>).Synchronize(), subject.ObserveOn(scheduler));
@@ -156,7 +156,7 @@ namespace UniRx
             {
                 if (error == null)
                 {
-                    throw new ArgumentNullException(nameof(error));
+                    throw new ArgumentNullException("error");
                 }
 
                 _observer.OnError(error);
@@ -171,7 +171,7 @@ namespace UniRx
             {
                 if (observer == null)
                 {
-                    throw new ArgumentNullException(nameof(observer));
+                    throw new ArgumentNullException("observer");
                 }
 
                 //

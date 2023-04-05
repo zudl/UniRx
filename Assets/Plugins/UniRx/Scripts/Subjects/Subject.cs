@@ -43,12 +43,24 @@ namespace UniRx
         /// <summary>
         /// Indicates whether the subject has observers subscribed to it.
         /// </summary>
-        public override bool HasObservers => Volatile.Read(ref _observers).Length != 0;
+        public override bool HasObservers
+        {
+            get
+            {
+                return Volatile.Read(ref _observers).Length != 0;
+            }
+        }
 
         /// <summary>
         /// Indicates whether the subject has been disposed.
         /// </summary>
-        public override bool IsDisposed => Volatile.Read(ref _observers) == Disposed;
+        public override bool IsDisposed
+        {
+            get
+            {
+                return Volatile.Read(ref _observers) == Disposed;
+            }
+        }
 
         #endregion
 
@@ -56,7 +68,10 @@ namespace UniRx
 
         #region IObserver<T> implementation
 
-        private static void ThrowDisposed() => throw new ObjectDisposedException(string.Empty);
+        private static void ThrowDisposed()
+        {
+            throw new ObjectDisposedException(string.Empty);
+        }
 
         /// <summary>
         /// Notifies all subscribed observers about the end of the sequence.
@@ -82,7 +97,10 @@ namespace UniRx
                 {
                     foreach (var observer in observers)
                     {
-                        observer.Observer?.OnCompleted();
+                        if (observer.Observer != null)
+                        {
+                            observer.Observer.OnCompleted();
+                        }
                     }
 
                     break;
@@ -99,7 +117,7 @@ namespace UniRx
         {
             if (error == null)
             {
-                throw new ArgumentNullException(nameof(error));
+                throw new ArgumentNullException("error");
             }
 
             for (;;)
@@ -123,7 +141,10 @@ namespace UniRx
                 {
                     foreach (var observer in observers)
                     {
-                        observer.Observer?.OnError(error);
+                        if (observer.Observer != null)
+                        {
+                            observer.Observer.OnError(error);
+                        }
                     }
 
                     break;
@@ -147,7 +168,10 @@ namespace UniRx
 
             foreach (var observer in observers)
             {
-                observer.Observer?.OnNext(value);
+                if (observer.Observer != null)
+                {
+                    observer.Observer.OnNext(value);
+                }
             }
         }
 
@@ -165,7 +189,7 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             var disposable = default(SubjectDisposable);
@@ -200,7 +224,7 @@ namespace UniRx
                     disposable = new SubjectDisposable(this, observer);
                 }
 
-                var n = observers.Length;
+                int n = observers.Length;
                 var b = new SubjectDisposable[n + 1];
                 Array.Copy(observers, 0, b, 0, n);
                 b[n] = disposable;
@@ -263,7 +287,13 @@ namespace UniRx
                 _observer = observer;
             }
 
-            public IObserver<T> Observer => _observer;
+            public IObserver<T> Observer
+            {
+                get
+                {
+                    return _observer;
+                }
+            }
 
             public void Dispose()
             {
@@ -274,7 +304,7 @@ namespace UniRx
                 }
 
                 _subject.Unsubscribe(this);
-                _subject = null!;
+                _subject = null;
             }
         }
 

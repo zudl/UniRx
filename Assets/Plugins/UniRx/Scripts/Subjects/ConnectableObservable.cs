@@ -79,7 +79,7 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             return _subject.Subscribe(observer);

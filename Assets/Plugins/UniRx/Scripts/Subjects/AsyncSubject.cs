@@ -48,12 +48,24 @@ namespace UniRx
         /// <summary>
         /// Indicates whether the subject has observers subscribed to it.
         /// </summary>
-        public override bool HasObservers => _observers.Length != 0;
+        public override bool HasObservers
+        {
+            get
+            {
+                return _observers.Length != 0;
+            }
+        }
 
         /// <summary>
         /// Indicates whether the subject has been disposed.
         /// </summary>
-        public override bool IsDisposed => Volatile.Read(ref _observers) == Disposed;
+        public override bool IsDisposed
+        {
+            get
+            {
+                return Volatile.Read(ref _observers) == Disposed;
+            }
+        }
 
         public T Value
         {
@@ -70,9 +82,12 @@ namespace UniRx
 		        }
 
 		        var ex = _exception;
-			    ex?.Throw();
+                if (ex != null)
+                {
+                    ex.Throw();
+                }
 
-		        return _value;
+                return _value;
 	        }
         }
 
@@ -139,7 +154,7 @@ namespace UniRx
         {
             if (error == null)
             {
-                throw new ArgumentNullException(nameof(error));
+                throw new ArgumentNullException("error");
             }
 
             for (; ; )
@@ -208,7 +223,7 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             var parent = new AsyncSubjectDisposable(this, observer);
@@ -327,7 +342,11 @@ namespace UniRx
 
             public void Dispose()
             {
-                Interlocked.Exchange(ref _parent, null)?.Remove(this);
+                var parent = Interlocked.Exchange(ref _parent, null);
+                if (parent != null)
+                {
+                    parent.Remove(this);
+                }
             }
 
             internal bool IsDisposed()
@@ -366,7 +385,10 @@ namespace UniRx
         /// Gets an awaitable object for the current AsyncSubject.
         /// </summary>
         /// <returns>Object that can be awaited.</returns>
-        public AsyncSubject<T> GetAwaiter() => this;
+        public AsyncSubject<T> GetAwaiter()
+        {
+            return this;
+        }
 
         /// <summary>
         /// Specifies a callback action that will be invoked when the subject completes.
@@ -377,7 +399,7 @@ namespace UniRx
         {
             if (continuation == null)
             {
-                throw new ArgumentNullException(nameof(continuation));
+                throw new ArgumentNullException("continuation");
             }
 
             OnCompleted(continuation, originalContext: true);
@@ -406,9 +428,15 @@ namespace UniRx
                 _callback = callback;
             }
 
-            public void OnCompleted() => InvokeOnOriginalContext();
+            public void OnCompleted()
+            {
+                InvokeOnOriginalContext();
+            }
 
-            public void OnError(Exception error) => InvokeOnOriginalContext();
+            public void OnError(Exception error)
+            {
+                InvokeOnOriginalContext();
+            }
 
             public void OnNext(T value) { }
 
@@ -435,7 +463,13 @@ namespace UniRx
         /// <summary>
         /// Gets whether the AsyncSubject has completed.
         /// </summary>
-        public bool IsCompleted => Volatile.Read(ref _observers) == Terminated;
+        public bool IsCompleted
+        {
+            get
+            {
+                return Volatile.Read(ref _observers) == Terminated;
+            }
+        }
 
         /// <summary>
         /// Gets the last element of the subject, potentially blocking until the subject completes successfully or exceptionally.
@@ -452,7 +486,10 @@ namespace UniRx
                 e.WaitOne();
             }
 
-            _exception?.Throw();
+            if (_exception != null)
+            {
+                _exception.Throw();
+            }
 
             if (!_hasValue)
             {

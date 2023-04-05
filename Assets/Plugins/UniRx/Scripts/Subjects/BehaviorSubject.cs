@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using UniRx.InternalUtil;
 
@@ -43,7 +42,13 @@ namespace UniRx
         /// <summary>
         /// Indicates whether the subject has observers subscribed to it.
         /// </summary>
-        public override bool HasObservers => _observers?.Data.Length > 0;
+        public override bool HasObservers
+        {
+            get
+            {
+                return _observers != null && _observers.Data.Length > 0;
+            }
+        }
 
         /// <summary>
         /// Indicates whether the subject has been disposed.
@@ -80,7 +85,11 @@ namespace UniRx
                 lock (_gate)
                 {
                     CheckDisposed();
-                    _exception?.Throw();
+                    if (_exception != null)
+                    {
+                        _exception.Throw();
+                    }
+
                     return _value;
                 }
             }
@@ -103,17 +112,21 @@ namespace UniRx
         /// In some cases, it may be necessary for a caller to use external synchronization to avoid race conditions.
         /// </alert>
         /// </remarks>
-        public bool TryGetValue([MaybeNullWhen(false)] out T value)
+        public bool TryGetValue(out T value)
         {
             lock (_gate)
             {
                 if (_isDisposed)
                 {
-                    value = default;
+                    value = default(T);
                     return false;
                 }
 
-                _exception?.Throw();
+                if (_exception != null)
+                {
+                    _exception.Throw();
+                }
+
                 value = _value;
                 return true;
             }
@@ -158,7 +171,7 @@ namespace UniRx
         {
             if (error == null)
             {
-                throw new ArgumentNullException(nameof(error));
+                throw new ArgumentNullException("error");
             }
 
             IObserver<T>[] os = null;
@@ -227,7 +240,7 @@ namespace UniRx
         {
             if (observer == null)
             {
-                throw new ArgumentNullException(nameof(observer));
+                throw new ArgumentNullException("observer");
             }
 
             Exception ex;
@@ -281,8 +294,8 @@ namespace UniRx
             lock (_gate)
             {
                 _isDisposed = true;
-                _observers = null!; // NB: Disposed checks happen prior to accessing _observers.
-                _value = default!;
+                _observers = null; // NB: Disposed checks happen prior to accessing _observers.
+                _value = default(T);
                 _exception = null;
             }
         }
@@ -317,7 +330,7 @@ namespace UniRx
                 }
 
                 _subject.Unsubscribe(observer);
-                _subject = null!;
+                _subject = null;
             }
         }
 

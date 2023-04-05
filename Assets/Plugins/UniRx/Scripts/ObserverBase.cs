@@ -52,7 +52,7 @@ namespace UniRx
         {
             if (error == null)
             {
-                throw new ArgumentNullException(nameof(error));
+                throw new ArgumentNullException("error");
             }
 
             if (Interlocked.Exchange(ref _isStopped, 1) == 0)
