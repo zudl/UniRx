@@ -11,32 +11,43 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
-        class MainThreadScheduler : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
+
+        class IgnoreTimeScaleMainThreadScheduler : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
         {
             readonly Action<object> _scheduleAction;
 
-            public MainThreadScheduler()
+            public IgnoreTimeScaleMainThreadScheduler()
             {
                 MainThreadDispatcher.Initialize();
                 _scheduleAction = new Action<object>(Schedule);
             }
 
-            // delay action is run in StartCoroutine
-            // Okay to action run synchronous and guaranteed run on MainThread
             IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
             {
-                // zero == every frame
                 if (dueTime == TimeSpan.Zero)
                 {
-                    yield return null; // not immediately, run next frame
+                    yield return null;
+                    if (cancellation.IsDisposed) yield break;
+
+                    MainThreadDispatcher.UnsafeSend(action);
                 }
                 else
                 {
-                    yield return new WaitForSeconds((float)dueTime.TotalSeconds);
-                }
+                    var elapsed = 0f;
+                    var dt = (float)dueTime.TotalSeconds;
+                    while (true)
+                    {
+                        yield return null;
+                        if (cancellation.IsDisposed) break;
 
-                if (cancellation.IsDisposed) yield break;
-                MainThreadDispatcher.UnsafeSend(action);
+                        elapsed += Time.unscaledDeltaTime;
+                        if (elapsed >= dt)
+                        {
+                            MainThreadDispatcher.UnsafeSend(action);
+                            break;
+                        }
+                    }
+                }
             }
 
             IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
@@ -54,22 +65,26 @@ namespace UniRx
                 }
                 else
                 {
-                    var seconds = (float)(period.TotalMilliseconds / 1000.0);
-                    var yieldInstruction = new WaitForSeconds(seconds); // cache single instruction object
-
+                    var elapsed = 0f;
+                    var dt = (float)period.TotalSeconds;
                     while (true)
                     {
-                        yield return yieldInstruction;
-                        if (cancellation.IsDisposed) yield break;
+                        yield return null;
+                        if (cancellation.IsDisposed) break;
 
-                        MainThreadDispatcher.UnsafeSend(action);
+                        elapsed += Time.unscaledDeltaTime;
+                        if (elapsed >= dt)
+                        {
+                            MainThreadDispatcher.UnsafeSend(action);
+                            elapsed = 0;
+                        }
                     }
                 }
             }
 
             public DateTimeOffset Now
             {
-                get { return Scheduler.NowFromUnityTime(Time.time); }
+                get { return Scheduler.NowFromUnityTime(Time.unscaledTime); }
             }
 
             void Schedule(object state)
@@ -111,15 +126,6 @@ namespace UniRx
                 MainThreadDispatcher.SendStartCoroutine(PeriodicAction(time, action, d));
 
                 return d;
-            }
-
-            void ScheduleQueueing<T>(object state)
-            {
-                var t = (Tuple<ICancelable, T, Action<T>>)state;
-                if (!t.Item1.IsDisposed)
-                {
-                    t.Item3(t.Item2);
-                }
             }
 
             public void ScheduleQueueing<T>(ICancelable cancel, T state, Action<T> action)

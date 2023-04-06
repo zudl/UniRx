@@ -128,9 +128,9 @@ namespace UniRx.Operators
                 try { observer.OnCompleted(); } finally { Dispose(); };
             }
 
-            void Trim(TimeSpan now)
+            void Trim(TimeSpan time)
             {
-                while (q.Count > 0 && now - q.Peek().Interval >= parent.duration)
+                while (q.Count > 0 && time - q.Peek().Interval >= parent.duration)
                 {
                     q.Dequeue();
                 }
