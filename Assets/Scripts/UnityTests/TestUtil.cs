@@ -25,6 +25,7 @@ namespace UniRx.Tests
             Scheduler.DefaultSchedulers.TailRecursion = Scheduler.Immediate;
             Scheduler.DefaultSchedulers.Iteration = Scheduler.CurrentThread;
             Scheduler.DefaultSchedulers.TimeBasedOperations = Scheduler.ThreadPool;
+            Scheduler.DefaultSchedulers.RealTimeOperations = Scheduler.ThreadPool;
             Scheduler.DefaultSchedulers.AsyncConversions = Scheduler.ThreadPool;
         }
     }

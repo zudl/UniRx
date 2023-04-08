@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Diagnostics;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -334,6 +333,41 @@ namespace UniRx.Tests
 
             elapsed = Time.unscaledTime - timeOnStart;
             elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+
+            Time.timeScale = 1f;
+        }
+
+        [UnityTest]
+        public IEnumerator DateTimeOffsetTimerTest()
+        {
+            const float TimeScale = 2f;
+            var realtimeScheduler = Scheduler.MainThreadSystemTime;
+            var scaledScheduler = Scheduler.MainThread;
+
+            var timeOnStart = DateTimeOffset.Now;
+            var dueTime = TimeSpan.FromSeconds(1f);
+            var period = TimeSpan.FromSeconds(0.5f);
+            var error = TimeSpan.FromSeconds(0.2f);
+
+            Time.timeScale = TimeScale;
+
+            yield return Observable.Timer(DateTimeOffset.Now + dueTime, period,
+                    realtimeScheduler, scaledScheduler)
+                .Take(10)
+                .Timestamp()
+                .ToArray()
+                .Last()
+                .Do(values =>
+                {
+                    var expectedTime = timeOnStart;
+                    for (var i = 0; i < values.Length; i++)
+                    {
+                        var expectedDelta = i == 0 ? dueTime : TimeSpan.FromSeconds(period.TotalSeconds / TimeScale);
+                        expectedTime += expectedDelta;
+                        values[i].Timestamp.Is(t => t > expectedTime - error && t < expectedTime + error);
+                    }
+                })
+                .ToAwaitableEnumerator();
 
             Time.timeScale = 1f;
         }

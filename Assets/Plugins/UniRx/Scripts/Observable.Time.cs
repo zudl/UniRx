@@ -24,7 +24,7 @@ namespace UniRx
 
         public static IObservable<long> Timer(DateTimeOffset dueTime)
         {
-            return new TimerObservable(dueTime, null, Scheduler.DefaultSchedulers.TimeBasedOperations);
+            return new TimerObservable(dueTime, null, Scheduler.DefaultSchedulers.RealTimeOperations, null);
         }
 
         public static IObservable<long> Timer(TimeSpan dueTime, TimeSpan period)
@@ -34,7 +34,7 @@ namespace UniRx
 
         public static IObservable<long> Timer(DateTimeOffset dueTime, TimeSpan period)
         {
-            return new TimerObservable(dueTime, period, Scheduler.DefaultSchedulers.TimeBasedOperations);
+            return new TimerObservable(dueTime, period, Scheduler.DefaultSchedulers.RealTimeOperations, Scheduler.DefaultSchedulers.TimeBasedOperations);
         }
 
         public static IObservable<long> Timer(TimeSpan dueTime, IScheduler scheduler)
@@ -42,9 +42,15 @@ namespace UniRx
             return new TimerObservable(dueTime, null, scheduler);
         }
 
+        /// <summary>
+        /// This override requires a special type of scheduler.
+        /// </summary>
+        /// <param name="dueTime">Time.</param>
+        /// <param name="scheduler">Real time scheduler such as SystemTimeMainThreadScheduler, CustomMainThreadScheduler or ThreadPoolScheduler.</param>
+        /// <returns></returns>
         public static IObservable<long> Timer(DateTimeOffset dueTime, IScheduler scheduler)
         {
-            return new TimerObservable(dueTime, null, scheduler);
+            return new TimerObservable(dueTime, null, scheduler, null);
         }
 
         public static IObservable<long> Timer(TimeSpan dueTime, TimeSpan period, IScheduler scheduler)
@@ -52,9 +58,18 @@ namespace UniRx
             return new TimerObservable(dueTime, period, scheduler);
         }
 
-        public static IObservable<long> Timer(DateTimeOffset dueTime, TimeSpan period, IScheduler scheduler)
+        /// <summary>
+        /// This override requires a special type of scheduler.
+        /// </summary>
+        /// <param name="dueTime">Time</param>
+        /// <param name="period">Period</param>
+        /// <param name="delayScheduler">Real time scheduler such as SystemTimeMainThreadScheduler, CustomMainThreadScheduler or ThreadPoolScheduler.
+        /// Used to schedule first value on <see cref="dueTime"/>.</param>
+        /// <param name="cycleScheduler">Scheduler for repeating values, has no additional constraints.</param>
+        /// <returns></returns>
+        public static IObservable<long> Timer(DateTimeOffset dueTime, TimeSpan period, IScheduler delayScheduler, IScheduler cycleScheduler)
         {
-            return new TimerObservable(dueTime, period, scheduler);
+            return new TimerObservable(dueTime, period, delayScheduler, cycleScheduler);
         }
 
         public static IObservable<Timestamped<TSource>> Timestamp<TSource>(this IObservable<TSource> source)
@@ -62,6 +77,11 @@ namespace UniRx
             return Timestamp<TSource>(source, Scheduler.DefaultSchedulers.RealTimeOperations);
         }
 
+        /// <summary>
+        /// This override requires a special type of scheduler.
+        /// </summary>
+        /// <param name="source">Source observable.</param>
+        /// <param name="scheduler">Real time scheduler such as SystemTimeMainThreadScheduler, CustomMainThreadScheduler or ThreadPoolScheduler.</param>
         public static IObservable<Timestamped<TSource>> Timestamp<TSource>(this IObservable<TSource> source, IScheduler scheduler)
         {
             return new TimestampObservable<TSource>(source, scheduler);

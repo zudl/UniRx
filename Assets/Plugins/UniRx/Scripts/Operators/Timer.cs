@@ -4,81 +4,74 @@ namespace UniRx.Operators
 {
     internal class TimerObservable : OperatorObservableBase<long>
     {
-        readonly DateTimeOffset? dueTimeA;
-        readonly TimeSpan? dueTimeB;
-        readonly TimeSpan? period;
-        readonly IScheduler scheduler;
+        readonly DateTimeOffset? _dueTimeA;
+        readonly TimeSpan? _dueTimeB;
+        readonly TimeSpan? _period;
+        readonly IScheduler _dueTimeScheduler;
+        readonly IScheduler _periodScheduler;
 
-        public TimerObservable(DateTimeOffset dueTime, TimeSpan? period, IScheduler scheduler)
-            : base(scheduler == Scheduler.CurrentThread)
+        public TimerObservable(DateTimeOffset dueTime, TimeSpan? period, IScheduler dueTimeScheduler, IScheduler periodScheduler)
+            : base(dueTimeScheduler == Scheduler.CurrentThread)
         {
-            this.dueTimeA = dueTime;
-            this.period = period;
-            this.scheduler = scheduler;
+            this._dueTimeA = dueTime;
+            this._period = period.HasValue ? Scheduler.Normalize(period.Value) : (TimeSpan?) null;
+            this._dueTimeScheduler = dueTimeScheduler;
+            this._periodScheduler = periodScheduler;
         }
 
         public TimerObservable(TimeSpan dueTime, TimeSpan? period, IScheduler scheduler)
             : base(scheduler == Scheduler.CurrentThread)
         {
-            this.dueTimeB = dueTime;
-            this.period = period;
-            this.scheduler = scheduler;
+            this._dueTimeB = Scheduler.Normalize(dueTime);
+            this._period = period.HasValue ? Scheduler.Normalize(period.Value) : (TimeSpan?) null;
+            this._dueTimeScheduler = scheduler;
+            this._periodScheduler = scheduler;
         }
 
         protected override IDisposable SubscribeCore(IObserver<long> observer, IDisposable cancel)
         {
             var timerObserver = new Timer(observer, cancel);
 
-            var dueTime = (dueTimeA != null)
-                ? dueTimeA.Value - scheduler.Now
-                : dueTimeB.Value;
+            var dueTime = (_dueTimeA != null)
+                ? Scheduler.Normalize(_dueTimeA.Value - _dueTimeScheduler.Now)
+                : _dueTimeB.Value;
 
             // one-shot
-            if (period == null)
+            if (_period == null)
             {
-                return scheduler.Schedule(Scheduler.Normalize(dueTime), () =>
+                return _dueTimeScheduler.Schedule(Scheduler.Normalize(dueTime), () =>
                 {
                     timerObserver.OnNext();
                     timerObserver.OnCompleted();
                 });
             }
-            else
+
+            if (_dueTimeScheduler == _periodScheduler)
             {
-                var periodicScheduler = scheduler as ISchedulerPeriodic;
-                if (periodicScheduler != null)
-                {
-                    if (dueTime == period.Value)
-                    {
-                        // same(Observable.Interval), run periodic
-                        return periodicScheduler.SchedulePeriodic(Scheduler.Normalize(dueTime), timerObserver.OnNext);
-                    }
-                    else
-                    {
-                        // Schedule Once + Scheudle Periodic
-                        var disposable = new SerialDisposable();
-
-                        disposable.Disposable = scheduler.Schedule(Scheduler.Normalize(dueTime), () =>
-                        {
-                            timerObserver.OnNext(); // run first
-
-                            var timeP = Scheduler.Normalize(period.Value);
-                            disposable.Disposable = periodicScheduler.SchedulePeriodic(timeP, timerObserver.OnNext); // run periodic
-                        });
-
-                        return disposable;
-                    }
-                }
-                else
-                {
-                    var timeP = Scheduler.Normalize(period.Value);
-
-                    return scheduler.Schedule(Scheduler.Normalize(dueTime), self =>
-                    {
-                        timerObserver.OnNext();
-                        self(timeP);
-                    });
-                }
+                return ScheduleCycle(dueTime, _period.Value, _periodScheduler, timerObserver);
             }
+
+            var disposable = new SerialDisposable();
+            disposable.Disposable = _dueTimeScheduler.Schedule(dueTime, () =>
+            {
+                timerObserver.OnNext();  // run first
+                disposable.Disposable = ScheduleCycle(_period.Value, _period.Value, _periodScheduler, timerObserver);
+            });
+            return disposable;
+        }
+
+        static IDisposable ScheduleCycle(TimeSpan dueTime, TimeSpan period, IScheduler scheduler, Timer timer)
+        {
+            var periodicScheduler = scheduler as ISchedulerPeriodic;
+            if (periodicScheduler != null && dueTime == period)
+            {
+                return periodicScheduler.SchedulePeriodic(period, timer.OnNext);
+            }
+            return scheduler.Schedule(dueTime, self =>
+            {
+                timer.OnNext();
+                self(period);
+            });
         }
 
         class Timer : OperatorObserverBase<long, long>
