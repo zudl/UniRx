@@ -1,10 +1,13 @@
 ﻿using System;
+using System.Collections;
+using System.Diagnostics;
 using NUnit.Framework;
-using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.TestTools;
 
 namespace UniRx.Tests
 {
-    
+
     public class ObservableTimeTest
     {
         [SetUp]
@@ -97,27 +100,6 @@ namespace UniRx.Tests
                 xs[1].Is(3);
                 xs[2].Is(4);
             }
-        }
-
-        [Test]
-        public void DelayTest()
-        {
-            var now = Scheduler.ThreadPool.Now;
-
-            var xs = Observable.Range(1, 3)
-                .Delay(TimeSpan.FromSeconds(1))
-                .Timestamp()
-                .ToArray()
-                .Wait();
-
-            xs[0].Value.Is(1);
-            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
-            xs[1].Value.Is(2);
-            (now.AddMilliseconds(800) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
-            xs[2].Value.Is(3);
-            (now.AddMilliseconds(800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
         }
 
         [Test]
@@ -269,6 +251,91 @@ namespace UniRx.Tests
             xs[2].Value.Is(3); xs[2].Interval.TotalSeconds.Is(x => 0.9 <= x && x <= 1.1);
             xs[3].Value.Is(4); xs[3].Interval.TotalSeconds.Is(x => 0.3 <= x && x <= 0.5);
             xs[4].Value.Is(5); xs[4].Interval.TotalSeconds.Is(x => 0.15 <= x && x <= 0.25);
+        }
+
+        [Test]
+        public void DelayTest()
+        {
+            var now = Scheduler.ThreadPool.Now;
+
+            var xs = Observable.Range(1, 3)
+                .Delay(TimeSpan.FromSeconds(1))
+                .Timestamp()
+                .ToArray()
+                .Wait();
+
+            xs[0].Value.Is(1);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            xs[1].Value.Is(2);
+            (now.AddMilliseconds(800) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            xs[2].Value.Is(3);
+            (now.AddMilliseconds(800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+        }
+
+        [UnityTest]
+        public IEnumerator ScaledDelayTest()
+        {
+            const float Period = 1f;
+            const float HighTimeScale = 2f;
+            const float LowTimeScale = 0.5f;
+            const float ErrorMs = 200;
+            var scaledScheduler = Scheduler.MainThread;
+
+            Time.timeScale = HighTimeScale;
+            var timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
+                .ToAwaitableEnumerator();
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period / HighTimeScale - ErrorMs && ms < Period / HighTimeScale + ErrorMs);
+
+            Time.timeScale = LowTimeScale;
+            timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
+                .ToAwaitableEnumerator();
+
+            elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period / LowTimeScale - ErrorMs && ms < Period / LowTimeScale + ErrorMs);
+
+            Time.timeScale = 1f;
+        }
+
+        [UnityTest]
+        public IEnumerator UnscaledDelayTest()
+        {
+            const float Period = 1f;
+            const float HighTimeScale = 2f;
+            const float LowTimeScale = 0.5f;
+            const float ErrorMs = 200;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
+
+            Time.timeScale = HighTimeScale;
+            var timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+
+            Time.timeScale = LowTimeScale;
+            timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+
+            elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+
+            Time.timeScale = 1f;
         }
     }
 }
