@@ -31,7 +31,8 @@ namespace UniRx
             Scheduler.DefaultSchedulers.ConstantTimeOperations = Scheduler.Immediate;
             Scheduler.DefaultSchedulers.TailRecursion = Scheduler.Immediate;
             Scheduler.DefaultSchedulers.Iteration = Scheduler.CurrentThread;
-            Scheduler.DefaultSchedulers.TimeBasedOperations = MainThread;
+            Scheduler.DefaultSchedulers.TimeBasedOperations = Scheduler.MainThread;
+            Scheduler.DefaultSchedulers.RealTimeOperations = Scheduler.MainThreadSystemTime;
             Scheduler.DefaultSchedulers.AsyncConversions = Scheduler.ThreadPool;
         }
     }

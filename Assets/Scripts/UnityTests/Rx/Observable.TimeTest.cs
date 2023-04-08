@@ -277,7 +277,7 @@ namespace UniRx.Tests
         [UnityTest]
         public IEnumerator ScaledDelayTest()
         {
-            const float Period = 1f;
+            const float Period = 2f;
             const float HighTimeScale = 2f;
             const float LowTimeScale = 0.5f;
             const float ErrorMs = 200;
@@ -309,7 +309,7 @@ namespace UniRx.Tests
         [UnityTest]
         public IEnumerator UnscaledDelayTest()
         {
-            const float Period = 1f;
+            const float Period = 2f;
             const float HighTimeScale = 2f;
             const float LowTimeScale = 0.5f;
             const float ErrorMs = 200;

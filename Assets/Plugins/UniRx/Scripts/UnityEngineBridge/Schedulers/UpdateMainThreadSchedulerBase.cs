@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using UnityEngine;
 
@@ -11,66 +11,23 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
-        class MainThreadScheduler : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
+        abstract class UpdateMainThreadSchedulerBase : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
         {
             readonly Action<object> _scheduleAction;
 
-            public MainThreadScheduler()
+            protected UpdateMainThreadSchedulerBase()
             {
                 MainThreadDispatcher.Initialize();
                 _scheduleAction = new Action<object>(Schedule);
             }
 
+            public abstract DateTimeOffset Now { get; }
+
             // delay action is run in StartCoroutine
             // Okay to action run synchronous and guaranteed run on MainThread
-            IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
-            {
-                // zero == every frame
-                if (dueTime == TimeSpan.Zero)
-                {
-                    yield return null; // not immediately, run next frame
-                }
-                else
-                {
-                    yield return new WaitForSeconds((float)dueTime.TotalSeconds);
-                }
+            protected abstract IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation);
 
-                if (cancellation.IsDisposed) yield break;
-                MainThreadDispatcher.UnsafeSend(action);
-            }
-
-            IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
-            {
-                // zero == every frame
-                if (period == TimeSpan.Zero)
-                {
-                    while (true)
-                    {
-                        yield return null; // not immediately, run next frame
-                        if (cancellation.IsDisposed) yield break;
-
-                        MainThreadDispatcher.UnsafeSend(action);
-                    }
-                }
-                else
-                {
-                    var seconds = (float)(period.TotalMilliseconds / 1000.0);
-                    var yieldInstruction = new WaitForSeconds(seconds); // cache single instruction object
-
-                    while (true)
-                    {
-                        yield return yieldInstruction;
-                        if (cancellation.IsDisposed) yield break;
-
-                        MainThreadDispatcher.UnsafeSend(action);
-                    }
-                }
-            }
-
-            public DateTimeOffset Now
-            {
-                get { return Scheduler.NowFromUnityTime(Time.time); }
-            }
+            protected abstract IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation);
 
             void Schedule(object state)
             {
@@ -111,15 +68,6 @@ namespace UniRx
                 MainThreadDispatcher.SendStartCoroutine(PeriodicAction(time, action, d));
 
                 return d;
-            }
-
-            void ScheduleQueueing<T>(object state)
-            {
-                var t = (Tuple<ICancelable, T, Action<T>>)state;
-                if (!t.Item1.IsDisposed)
-                {
-                    t.Item3(t.Item2);
-                }
             }
 
             public void ScheduleQueueing<T>(ICancelable cancel, T state, Action<T> action)

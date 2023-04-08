@@ -59,7 +59,7 @@ namespace UniRx
 
         public static IObservable<Timestamped<TSource>> Timestamp<TSource>(this IObservable<TSource> source)
         {
-            return Timestamp<TSource>(source, Scheduler.DefaultSchedulers.TimeBasedOperations);
+            return Timestamp<TSource>(source, Scheduler.DefaultSchedulers.RealTimeOperations);
         }
 
         public static IObservable<Timestamped<TSource>> Timestamp<TSource>(this IObservable<TSource> source, IScheduler scheduler)

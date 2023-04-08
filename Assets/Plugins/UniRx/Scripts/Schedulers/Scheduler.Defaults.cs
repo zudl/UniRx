@@ -66,6 +66,23 @@ namespace UniRx
                 }
             }
 
+            static IScheduler realTimeOperations;
+            public static IScheduler RealTimeOperations
+            {
+                get
+                {
+#if UniRxLibrary
+                    return realTimeOperations ?? (realTimeOperations = Scheduler.ThreadPool);
+#else
+                    return realTimeOperations ?? (realTimeOperations = Scheduler.MainThreadSystemTime);
+#endif
+                }
+                set
+                {
+                    realTimeOperations = value;
+                }
+            }
+
             static IScheduler asyncConversions;
             public static IScheduler AsyncConversions
             {
@@ -90,6 +107,7 @@ namespace UniRx
                 TailRecursion = Scheduler.Immediate;
                 Iteration = Scheduler.CurrentThread;
                 TimeBasedOperations = Scheduler.ThreadPool;
+                RealTimeOperations = Scheduler.ThreadPool;
                 AsyncConversions = Scheduler.ThreadPool;
             }
         }
@@ -117,6 +135,19 @@ namespace UniRx
             get
             {
                 return mainThreadIgnoreTimeScale ?? (mainThreadIgnoreTimeScale = new IgnoreTimeScaleMainThreadScheduler());
+            }
+        }
+
+        static IScheduler mainThreadSystemTime;
+
+        /// <summary>
+        /// Another MainThread scheduler, elapsed time is calculated based on system time
+        /// </summary>
+        public static IScheduler MainThreadSystemTime
+        {
+            get
+            {
+                return mainThreadSystemTime ?? (mainThreadSystemTime = new SystemTimeMainThreadScheduler());
             }
         }
 
