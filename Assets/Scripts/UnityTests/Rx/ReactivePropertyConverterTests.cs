@@ -18,6 +18,7 @@ namespace UniRx.Tests.Converters
             var instance = new TestClass();
             instance.IntProp1.Value = 1;
             instance.IntProp2.Value = 1;
+            instance.NullableProp2.Value = 1;
             instance.VectorProp.Value = new Vector2Struct(1, 1);
             instance.CustomProp.Value = new CustomRecord() { A = 100, B = "str" };
             instance.SimilarProp.Value.Value = 1;
@@ -49,6 +50,10 @@ namespace UniRx.Tests.Converters
 
             public IntReactiveProperty IntProp2 = new IntReactiveProperty(0);
 
+            public ReactiveProperty<int?> NullableProp1 = new ReactiveProperty<int?>(null);
+
+            public ReactiveProperty<int?> NullableProp2 = new ReactiveProperty<int?>(null);
+
             public ReactiveProperty<Vector2Struct> VectorProp = new ReactiveProperty<Vector2Struct>();
 
             public ReactiveProperty<CustomRecord> CustomProp =
@@ -69,6 +74,8 @@ namespace UniRx.Tests.Converters
             {
                 return string.Format("TestClass({0}, ", IntProp1.Value) +
                        string.Format("{0}, ", IntProp2.Value) +
+                       string.Format("{0}, ", NullableProp1.Value == null ? "null" : NullableProp1.Value.ToString()) +
+                       string.Format("{0}, ", NullableProp2.Value == null ? "null" : NullableProp2.Value.ToString()) +
                        string.Format("{0}, ", VectorProp.Value) +
                        string.Format("{0}, ", CustomProp.Value) +
                        string.Format("{0}, ", SimilarProp.Value) +
@@ -83,6 +90,8 @@ namespace UniRx.Tests.Converters
                 if (ReferenceEquals(this, other)) return true;
                 return IntProp1.Value == other.IntProp1.Value &&
                        IntProp2.Value == other.IntProp2.Value &&
+                       NullableProp1.Value == other.NullableProp1.Value &&
+                       NullableProp2.Value == other.NullableProp2.Value &&
                        VectorProp.Value.Equals(other.VectorProp.Value) &&
                        CustomProp.Value.Equals(other.CustomProp.Value) &&
                        SimilarProp.Value.Value == other.SimilarProp.Value.Value &&

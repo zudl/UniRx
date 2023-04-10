@@ -15,18 +15,21 @@ namespace UniRx.Json {
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer) {
             var reactivePropertyGenericType = GetReactivePropertyType(objectType);
-            if (reactivePropertyGenericType == null || reader.TokenType == JsonToken.Null) {
+            if (reactivePropertyGenericType == null) {
                 return null;
             }
 
             var propertyInfo = reactivePropertyGenericType.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public);
             var innerType = reactivePropertyGenericType.GetGenericArguments()[0];
-            object innerValue = null;
+            object innerValue;
 
             var jToken = JToken.Load(reader);
             switch (jToken.Type) {
                 case JTokenType.Object:
                     innerValue = ReadPropertyObject(jToken, serializer, innerType);
+                    break;
+                case JTokenType.Null:
+                    innerValue = null;
                     break;
                 default:
                     innerValue = jToken.ToObject(innerType, serializer);
