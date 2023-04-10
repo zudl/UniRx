@@ -9,6 +9,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class IntReactiveProperty : ReactiveProperty<int>
     {
         public IntReactiveProperty()
@@ -28,6 +31,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class LongReactiveProperty : ReactiveProperty<long>
     {
         public LongReactiveProperty()
@@ -48,6 +54,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class ByteReactiveProperty : ReactiveProperty<byte>
     {
         public ByteReactiveProperty()
@@ -67,6 +76,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class FloatReactiveProperty : ReactiveProperty<float>
     {
         public FloatReactiveProperty()
@@ -86,6 +98,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class DoubleReactiveProperty : ReactiveProperty<double>
     {
         public DoubleReactiveProperty()
@@ -105,6 +120,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class StringReactiveProperty : ReactiveProperty<string>
     {
         public StringReactiveProperty()
@@ -124,6 +142,9 @@ namespace UniRx
     /// Inspectable ReactiveProperty.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class BoolReactiveProperty : ReactiveProperty<bool>
     {
         public BoolReactiveProperty()
@@ -141,6 +162,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class Vector2ReactiveProperty : ReactiveProperty<Vector2>
     {
         public Vector2ReactiveProperty()
@@ -165,6 +189,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class Vector3ReactiveProperty : ReactiveProperty<Vector3>
     {
         public Vector3ReactiveProperty()
@@ -189,6 +216,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class Vector4ReactiveProperty : ReactiveProperty<Vector4>
     {
         public Vector4ReactiveProperty()
@@ -213,6 +243,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class ColorReactiveProperty : ReactiveProperty<Color>
     {
         public ColorReactiveProperty()
@@ -237,6 +270,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class RectReactiveProperty : ReactiveProperty<Rect>
     {
         public RectReactiveProperty()
@@ -261,6 +297,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class AnimationCurveReactiveProperty : ReactiveProperty<AnimationCurve>
     {
         public AnimationCurveReactiveProperty()
@@ -277,6 +316,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class BoundsReactiveProperty : ReactiveProperty<Bounds>
     {
         public BoundsReactiveProperty()
@@ -301,6 +343,9 @@ namespace UniRx
 
     /// <summary>Inspectable ReactiveProperty.</summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class QuaternionReactiveProperty : ReactiveProperty<Quaternion>
     {
         public QuaternionReactiveProperty()

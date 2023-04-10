@@ -2,12 +2,27 @@
     "name": "UnityTests",
     "references": [
         "UniRx.Async",
-        "UniRx"
-    ],
-    "optionalUnityReferences": [
-        "TestAssemblies"
+        "UniRx",
+        "UnityEngine.TestRunner",
+        "UnityEditor.TestRunner"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],
-    "allowUnsafeCode": false
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [
+        "nunit.framework.dll",
+        "Newtonsoft.Json.dll"
+    ],
+    "autoReferenced": false,
+    "defineConstraints": [
+        "UNITY_INCLUDE_TESTS"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.nuget.newtonsoft-json",
+            "expression": "",
+            "define": "UNIRX_NEWTONSOFT_SUPPORT"
+        }
+    ]
 }

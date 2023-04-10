@@ -75,6 +75,9 @@ namespace UniRx
     /// Lightweight property broker.
     /// </summary>
     [Serializable]
+#if UNIRX_NEWTONSOFT_SUPPORT && !UNIRX_NEWTONSOFT_SUPPORT_DISABLED
+    [Newtonsoft.Json.JsonConverter(typeof(UniRx.Json.ReactivePropertyConverter))]
+#endif
     public class ReactiveProperty<T> : IReactiveProperty<T>, IDisposable, IOptimizedObservable<T>, IObserverLinkedList<T>
     {
 #if !UniRxLibrary
