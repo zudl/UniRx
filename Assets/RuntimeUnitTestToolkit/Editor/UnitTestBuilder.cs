@@ -33,7 +33,8 @@ internal class RuntimeUnitTestSettings
 
     public override string ToString()
     {
-        return $"{ScriptBackend} {BuildTarget} Headless:{Headless} AutoRunPlayer:{AutoRunPlayer} DisableAutoClose:{DisableAutoClose}";
+        return string.Format("{0} {1} Headless:{2} AutoRunPlayer:{3} DisableAutoClose:{4}", ScriptBackend, BuildTarget,
+            Headless, AutoRunPlayer, DisableAutoClose);
     }
 }
 
@@ -118,7 +119,7 @@ public static partial class UnitTestBuilder
 
         if (buildPath == null)
         {
-            buildPath = $"bin/UnitTest/{settings.BuildTarget}_{settings.ScriptBackend}/test" + (IsWindows(settings.BuildTarget) ? ".exe" : "");
+            buildPath = string.Format("bin/UnitTest/{0}_{1}/test", settings.BuildTarget, settings.ScriptBackend) + (IsWindows(settings.BuildTarget) ? ".exe" : "");
         }
 
         var originalScene = SceneManager.GetActiveScene().path;
