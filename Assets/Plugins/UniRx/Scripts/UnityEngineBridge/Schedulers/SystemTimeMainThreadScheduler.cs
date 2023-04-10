@@ -10,6 +10,13 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
+        /// <summary>
+        /// Schedules units of work to run on the Unity main thread during Update phase, uses system time.
+        /// </summary>
+        /// <remarks>
+        /// SystemTimeMainThreadScheduler.Now represents current system time.
+        /// This is a recommended scheduler for Timestamped() and Timer(DateTimeOffset) operators.
+        /// </remarks>
         sealed class SystemTimeMainThreadScheduler : UpdateMainThreadSchedulerBase
         {
             public sealed override DateTimeOffset Now

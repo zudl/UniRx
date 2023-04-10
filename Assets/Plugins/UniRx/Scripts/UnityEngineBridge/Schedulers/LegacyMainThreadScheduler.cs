@@ -11,6 +11,13 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
+        /// <summary>
+        /// Legacy main thread scheduler.
+        /// </summary>
+        /// <remarks>
+        /// This implementation has issues with time-based operators such as Delay.
+        /// Use MainThreadScheduler instead.
+        /// </remarks>
         sealed class LegacyMainThreadScheduler : UpdateMainThreadSchedulerBase
         {
             public sealed override DateTimeOffset Now

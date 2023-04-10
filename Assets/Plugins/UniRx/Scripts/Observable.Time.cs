@@ -63,13 +63,13 @@ namespace UniRx
         /// </summary>
         /// <param name="dueTime">Time</param>
         /// <param name="period">Period</param>
-        /// <param name="delayScheduler">Real time scheduler such as SystemTimeMainThreadScheduler, CustomMainThreadScheduler or ThreadPoolScheduler.
+        /// <param name="dueTimeScheduler">Real time scheduler such as SystemTimeMainThreadScheduler, CustomMainThreadScheduler or ThreadPoolScheduler.
         /// Used to schedule first value on <see cref="dueTime"/>.</param>
-        /// <param name="cycleScheduler">Scheduler for repeating values, has no additional constraints.</param>
+        /// <param name="periodScheduler">Scheduler for repeating values, has no additional constraints.</param>
         /// <returns></returns>
-        public static IObservable<long> Timer(DateTimeOffset dueTime, TimeSpan period, IScheduler delayScheduler, IScheduler cycleScheduler)
+        public static IObservable<long> Timer(DateTimeOffset dueTime, TimeSpan period, IScheduler dueTimeScheduler, IScheduler periodScheduler)
         {
-            return new TimerObservable(dueTime, period, delayScheduler, cycleScheduler);
+            return new TimerObservable(dueTime, period, dueTimeScheduler, periodScheduler);
         }
 
         public static IObservable<Timestamped<TSource>> Timestamp<TSource>(this IObservable<TSource> source)

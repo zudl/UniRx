@@ -11,7 +11,14 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
-
+        /// <summary>
+        /// Schedules units of work to run on the Unity main thread during the End of frame phase.
+        /// </summary>
+        /// <remarks>
+        /// The behaviour of the Now property has been updated in order to fix time-based operators:
+        /// EndOfFrameMainThreadScheduler.Now represents scaled Unity time and should only be accessed by Rx operators.
+        /// To get current system time, use SystemTimeMainThreadScheduler.Now instead.
+        /// </remarks>
         class EndOfFrameMainThreadScheduler : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
         {
             public EndOfFrameMainThreadScheduler()

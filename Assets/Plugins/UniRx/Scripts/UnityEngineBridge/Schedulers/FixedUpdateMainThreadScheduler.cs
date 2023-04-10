@@ -11,6 +11,14 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
+        /// <summary>
+        /// Schedules units of work to run on the Unity main thread during Fixed Update phase.
+        /// </summary>
+        /// <remarks>
+        /// The behaviour of the Now property has been updated in order to fix time-based operators:
+        /// FixedUpdateMainThreadScheduler.Now represents Unity's fixed time and should only be accessed by Rx operators.
+        /// To get current system time, use SystemTimeMainThreadScheduler.Now instead.
+        /// </remarks>
         class FixedUpdateMainThreadScheduler : IScheduler, ISchedulerPeriodic, ISchedulerQueueing
         {
             public FixedUpdateMainThreadScheduler()

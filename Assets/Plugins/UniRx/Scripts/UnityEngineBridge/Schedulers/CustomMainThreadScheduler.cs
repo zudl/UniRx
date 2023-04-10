@@ -10,6 +10,14 @@ namespace UniRx
     public static partial class Scheduler
     {
 #endif
+        /// <summary>
+        /// Uses custom time source provided in constructor.
+        /// Schedules units of work to run on the Unity main thread during Update phase.
+        /// </summary>
+        /// <remarks>
+        /// CustomMainThreadScheduler.Now represents time from the custom source.
+        /// Use instead of the SystemTimeMainThreadScheduler if you have a preferred time source.
+        /// </remarks>
         sealed class CustomMainThreadScheduler : UpdateMainThreadSchedulerBase
         {
             readonly Func<DateTimeOffset> _timeGetter;

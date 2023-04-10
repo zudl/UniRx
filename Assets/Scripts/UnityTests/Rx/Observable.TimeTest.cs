@@ -285,6 +285,8 @@ namespace UniRx.Tests
             Time.timeScale = HighTimeScale;
             var timeOnStart = Time.unscaledTime;
 
+            yield return null;
+
             yield return Observable.ReturnUnit()
                 .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
                 .ToAwaitableEnumerator();
@@ -316,6 +318,8 @@ namespace UniRx.Tests
 
             Time.timeScale = HighTimeScale;
             var timeOnStart = Time.unscaledTime;
+
+            yield return null;
 
             yield return Observable.ReturnUnit()
                 .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
@@ -351,8 +355,9 @@ namespace UniRx.Tests
 
             Time.timeScale = TimeScale;
 
-            yield return Observable.Timer(DateTimeOffset.Now + dueTime, period,
-                    realtimeScheduler, scaledScheduler)
+            yield return null;
+
+            yield return Observable.Timer(timeOnStart + dueTime, period, realtimeScheduler, scaledScheduler)
                 .Take(10)
                 .Timestamp()
                 .ToArray()
