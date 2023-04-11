@@ -96,7 +96,13 @@ namespace UniRx
 
             public DateTimeOffset Now
             {
-                get { return Scheduler.NowFromUnityTime(Time.time); }
+                get
+                {
+#if UNITY_2020_2_OR_NEWER
+                    return Scheduler.NowFromUnityTime(Time.timeAsDouble);
+#endif
+                    return Scheduler.NowFromUnityTime(Time.time);
+                }
             }
 
             public IDisposable Schedule(Action action)

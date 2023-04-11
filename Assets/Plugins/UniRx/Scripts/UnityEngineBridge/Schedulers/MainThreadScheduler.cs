@@ -22,12 +22,18 @@ namespace UniRx
         /// </remarks>
         sealed class MainThreadScheduler : UpdateMainThreadSchedulerBase
         {
-            public sealed override DateTimeOffset Now
+            public override DateTimeOffset Now
             {
-                get { return Scheduler.NowFromUnityTime(Time.time); }
+                get
+                {
+#if UNITY_2020_2_OR_NEWER
+                    return Scheduler.NowFromUnityTime(Time.timeAsDouble);
+#endif
+                    return Scheduler.NowFromUnityTime(Time.time);
+                }
             }
 
-            protected sealed override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
+            protected override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
             {
                 if (dueTime == TimeSpan.Zero)
                 {
@@ -42,7 +48,7 @@ namespace UniRx
                 MainThreadDispatcher.UnsafeSend(action);
             }
 
-            protected sealed override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
+            protected override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
             {
                 // zero == every frame
                 if (period == TimeSpan.Zero)

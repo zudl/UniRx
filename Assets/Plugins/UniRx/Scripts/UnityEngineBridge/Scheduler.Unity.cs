@@ -14,13 +14,18 @@ namespace UniRx
         static readonly object Gate = new object();
         static DateTimeOffset _appStartTime;
 
-        public static DateTimeOffset NowFromUnityTime(float time)
+        public static DateTimeOffset NowFromUnityTime(double time)
         {
             lock (Gate)
             {
                 if (_appStartTime == default(DateTimeOffset))
                 {
-                    _appStartTime = DateTimeOffset.Now - TimeSpan.FromSeconds(Time.unscaledTime);
+#if UNITY_2020_2_OR_NEWER
+                    var timeSinceAppStart = TimeSpan.FromSeconds(Time.unscaledTimeAsDouble);
+#else
+                    var timeSinceAppStart = TimeSpan.FromSeconds(Time.unscaledTime);
+#endif
+                    _appStartTime = DateTimeOffset.Now - timeSinceAppStart;
                 }
             }
             return _appStartTime + TimeSpan.FromSeconds(time);

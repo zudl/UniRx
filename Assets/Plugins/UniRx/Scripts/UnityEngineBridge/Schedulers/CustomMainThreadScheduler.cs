@@ -27,12 +27,12 @@ namespace UniRx
                 _timeGetter = timeGetter;
             }
 
-            public sealed override DateTimeOffset Now
+            public override DateTimeOffset Now
             {
                 get { return _timeGetter.Invoke(); }
             }
 
-            protected sealed override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
+            protected override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
             {
                 var endTime = Now + dueTime;
                 do
@@ -44,7 +44,7 @@ namespace UniRx
                 MainThreadDispatcher.UnsafeSend(action);
             }
 
-            protected sealed override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
+            protected override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
             {
                 // zero == every frame
                 if (period == TimeSpan.Zero)

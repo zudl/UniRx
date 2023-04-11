@@ -19,12 +19,17 @@ namespace UniRx
         /// IgnoreTimeScaleMainThreadScheduler.Now represents unscaled Unity time and should only be accessed by Rx operators.
         /// To get current system time, use SystemTimeMainThreadScheduler.Now instead.
         /// </remarks>
-        class IgnoreTimeScaleMainThreadScheduler : UpdateMainThreadSchedulerBase
+        sealed class IgnoreTimeScaleMainThreadScheduler : UpdateMainThreadSchedulerBase
         {
-
             public override DateTimeOffset Now
             {
-                get { return Scheduler.NowFromUnityTime(Time.unscaledTime); }
+                get
+                {
+#if UNITY_2020_2_OR_NEWER
+                    return Scheduler.NowFromUnityTime(Time.unscaledTimeAsDouble);
+#endif
+                    return Scheduler.NowFromUnityTime(Time.unscaledTime);
+                }
             }
 
             protected override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)

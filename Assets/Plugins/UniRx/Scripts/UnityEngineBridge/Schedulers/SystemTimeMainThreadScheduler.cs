@@ -15,16 +15,16 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// SystemTimeMainThreadScheduler.Now represents current system time.
-        /// This is a recommended scheduler for Timestamped() and Timer(DateTimeOffset) operators.
+        /// This is the default scheduler for Timestamped() and Timer(DateTimeOffset) operators.
         /// </remarks>
         sealed class SystemTimeMainThreadScheduler : UpdateMainThreadSchedulerBase
         {
-            public sealed override DateTimeOffset Now
+            public override DateTimeOffset Now
             {
                 get { return Scheduler.Now; }
             }
 
-            protected sealed override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
+            protected override IEnumerator DelayAction(TimeSpan dueTime, Action action, ICancelable cancellation)
             {
                 var endTime = Now + dueTime;
                 do
@@ -36,7 +36,7 @@ namespace UniRx
                 MainThreadDispatcher.UnsafeSend(action);
             }
 
-            protected sealed override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
+            protected override IEnumerator PeriodicAction(TimeSpan period, Action action, ICancelable cancellation)
             {
                 // zero == every frame
                 if (period == TimeSpan.Zero)
