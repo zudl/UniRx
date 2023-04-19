@@ -47,11 +47,16 @@ namespace UniRx
                 {
                     var elapsed = 0f;
                     var dt = (float)dueTime.TotalSeconds;
+                    var prevFrame = Time.frameCount;
                     while (true)
                     {
                         yield return null;
                         if (cancellation.IsDisposed) break;
-
+                        if (prevFrame == Time.frameCount)
+                        {
+                            continue;
+                        }
+                        prevFrame = Time.frameCount;
                         elapsed += Time.deltaTime;
                         if (elapsed >= dt)
                         {
@@ -79,11 +84,17 @@ namespace UniRx
                 {
                     var elapsed = 0f;
                     var dt = (float)period.TotalSeconds;
+                    var prevFrame = Time.frameCount;
                     while (true)
                     {
                         yield return null;
                         if (cancellation.IsDisposed) break;
+                        if (Time.frameCount == prevFrame)
+                        {
+                            continue;
+                        }
 
+                        prevFrame = Time.frameCount;
                         elapsed += Time.deltaTime;
                         if (elapsed >= dt)
                         {
