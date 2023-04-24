@@ -100,7 +100,7 @@ publish
 *.Publish.xml
 
 # NuGet Packages Directory
-packages
+/(?i)packages(?-i)/
 
 # Windows Azure Build Output
 csx
@@ -129,5 +129,3 @@ Backup*/
 UpgradeLog*.XML
 Assets/WSATestCertificate.pfx
 .vs/
-
-Packages
