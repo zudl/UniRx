@@ -30,10 +30,10 @@ namespace UniRx.Operators
         {
             readonly ThrottleFrameObservable<T> parent;
             readonly object gate = new object();
+            int framesSinceValueSet;
             T latestValue = default(T);
             bool hasValue = false;
-            SerialDisposable cancelable;
-            ulong id = 0;
+            IDisposable timer;
 
             public ThrottleFrame(ThrottleFrameObservable<T> parent, IObserver<T> observer, IDisposable cancel) : base(observer, cancel)
             {
@@ -42,44 +42,35 @@ namespace UniRx.Operators
 
             public IDisposable Run()
             {
-                cancelable = new SerialDisposable();
+                timer = CreateTimer();
                 var subscription = parent.source.Subscribe(this);
-
-                return StableCompositeDisposable.Create(cancelable, subscription);
+                return StableCompositeDisposable.Create(timer, subscription);
             }
 
             public override void OnNext(T value)
             {
-                ulong currentid;
                 lock (gate)
                 {
                     hasValue = true;
                     latestValue = value;
-                    id = unchecked(id + 1);
-                    currentid = id;
+                    framesSinceValueSet = 0;
                 }
-
-                var d = new SingleAssignmentDisposable();
-                cancelable.Disposable = d;
-                d.Disposable = UnityObservable.TimerFrame(parent.frameCount, parent.frameCountType)
-                    .Subscribe(new ThrottleFrameTick(this, currentid));
             }
 
             public override void OnError(Exception error)
             {
-                cancelable.Dispose();
+                timer.Dispose();
 
                 lock (gate)
                 {
                     hasValue = false;
-                    id = unchecked(id + 1);
                     try { observer.OnError(error); } finally { Dispose(); }
                 }
             }
 
             public override void OnCompleted()
             {
-                cancelable.Dispose();
+                timer.Dispose();
 
                 lock (gate)
                 {
@@ -88,20 +79,23 @@ namespace UniRx.Operators
                         observer.OnNext(latestValue);
                     }
                     hasValue = false;
-                    id = unchecked(id + 1);
                     try { observer.OnCompleted(); } finally { Dispose(); }
                 }
+            }
+
+            IDisposable CreateTimer()
+            {
+                return UnityObservable.TimerFrame(0, 1, parent.frameCountType)
+                    .Subscribe(new ThrottleFrameTick(this));
             }
 
             class ThrottleFrameTick : IObserver<long>
             {
                 readonly ThrottleFrame parent;
-                readonly ulong currentid;
 
-                public ThrottleFrameTick(ThrottleFrame parent, ulong currentid)
+                public ThrottleFrameTick(ThrottleFrame parent)
                 {
                     this.parent = parent;
-                    this.currentid = currentid;
                 }
 
                 public void OnCompleted()
@@ -116,11 +110,11 @@ namespace UniRx.Operators
                 {
                     lock (parent.gate)
                     {
-                        if (parent.hasValue && parent.id == currentid)
+                        if (parent.hasValue && parent.framesSinceValueSet++ >= parent.parent.frameCount)
                         {
+                            parent.hasValue = false;
                             parent.observer.OnNext(parent.latestValue);
                         }
-                        parent.hasValue = false;
                     }
                 }
             }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -409,24 +410,25 @@ namespace UniRx.Tests
 
             yield return null;
 
+            Timestamped<long>[] emittedValues = null;
             yield return Observable.Timer(timeOnStart + dueTime, period, realtimeScheduler, scaledScheduler)
                 .Take(10)
                 .Timestamp()
                 .ToArray()
-                .Last()
-                .Do(values =>
-                {
-                    var expectedTime = timeOnStart;
-                    for (var i = 0; i < values.Length; i++)
-                    {
-                        var expectedDelta = i == 0 ? dueTime : TimeSpan.FromSeconds(period.TotalSeconds / TimeScale);
-                        expectedTime += expectedDelta;
-                        values[i].Timestamp.Is(t => t > expectedTime - error && t < expectedTime + error);
-                    }
-                })
+                .Do(values => emittedValues = values)
                 .ToAwaitableEnumerator();
 
             Time.timeScale = 1f;
+
+            var prevTime = timeOnStart;
+            for (var i = 0; i < emittedValues.Length; i++)
+            {
+                var expectedDelta = i == 0 ? dueTime : TimeSpan.FromSeconds(period.TotalSeconds / TimeScale);
+                var expectedTime = prevTime + expectedDelta;
+                prevTime = expectedTime;
+                emittedValues[i].Timestamp.Is(t => t > expectedTime - error && t < expectedTime + error);
+            }
+
         }
 
         [UnityTest]
@@ -434,12 +436,15 @@ namespace UniRx.Tests
         {
             yield return null;
             var period = TimeSpan.FromSeconds(1f);
+            long[] emittedValues = null;
             yield return Observable.Interval(period, Scheduler.MainThread)
                 .Take(4)
                 .ThrottleFirst(period, Scheduler.MainThreadEndOfFrame)
                 .ToArray()
-                .Do(array => array.Length.Is(2))
+                .Do(array => emittedValues = array)
                 .ToAwaitableEnumerator();
+
+            emittedValues.Length.Is(2);
         }
 
         [UnityTest]

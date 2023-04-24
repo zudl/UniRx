@@ -58,18 +58,13 @@ namespace UniRx.Operators
 
             void Tick()
             {
-                var shouldEmit = false;
                 lock (gate)
                 {
                     if (hasValue && parent.scheduler.Now >= next)
                     {
                         hasValue = false;
-                        shouldEmit = true;
+                        observer.OnNext(latestValue);
                     }
-                }
-
-                if (shouldEmit) {
-                    observer.OnNext(latestValue);
                 }
             }
 

@@ -76,8 +76,8 @@ namespace UniRx.Operators
                 lock (gate)
                 {
                     if (closedUntil.HasValue) return;
-                    observer.OnNext(value);
                     closedUntil = parent.scheduler.Now + parent.dueTime;
+                    observer.OnNext(value);
                 }
             }
 

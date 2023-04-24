@@ -30,10 +30,8 @@ namespace UniRx.Operators
         {
             readonly ThrottleFirstFrameObservable<T> parent;
             readonly object gate = new object();
-            bool open = true;
-            SerialDisposable cancelable;
-
-            ThrottleFirstFrameTick tick;
+            int framesTillOpen = -1;
+            IDisposable timer;
 
             public ThrottleFirstFrame(ThrottleFirstFrameObservable<T> parent, IObserver<T> observer, IDisposable cancel) : base(observer, cancel)
             {
@@ -42,39 +40,24 @@ namespace UniRx.Operators
 
             public IDisposable Run()
             {
-                tick = new ThrottleFirstFrameTick(this);
-                cancelable = new SerialDisposable();
-
+                timer = CreateTimer();
                 var subscription = parent.source.Subscribe(this);
-                return StableCompositeDisposable.Create(cancelable, subscription);
-            }
-
-            void OnNext()
-            {
-                lock (gate)
-                {
-                    open = true;
-                }
+                return StableCompositeDisposable.Create(timer, subscription);
             }
 
             public override void OnNext(T value)
             {
                 lock (gate)
                 {
-                    if (!open) return;
+                    if (framesTillOpen > 0) return;
+                    framesTillOpen = parent.frameCount + 1;
                     observer.OnNext(value);
-                    open = false;
                 }
-
-                var d = new SingleAssignmentDisposable();
-                cancelable.Disposable = d;
-                d.Disposable = UnityObservable.TimerFrame(parent.frameCount, parent.frameCountType)
-                    .Subscribe(tick);
             }
 
             public override void OnError(Exception error)
             {
-                cancelable.Dispose();
+                timer.Dispose();
 
                 lock (gate)
                 {
@@ -84,12 +67,18 @@ namespace UniRx.Operators
 
             public override void OnCompleted()
             {
-                cancelable.Dispose();
+                timer.Dispose();
 
                 lock (gate)
                 {
                     try { observer.OnCompleted(); } finally { Dispose(); }
                 }
+            }
+
+            IDisposable CreateTimer()
+            {
+                return UnityObservable.TimerFrame(0, 1, parent.frameCountType)
+                    .Subscribe(new ThrottleFirstFrameTick(this));
             }
 
             // immutable, can share.
@@ -114,7 +103,10 @@ namespace UniRx.Operators
                 {
                     lock (parent.gate)
                     {
-                        parent.open = true;
+                        if (parent.framesTillOpen > 0)
+                        {
+                            parent.framesTillOpen--;
+                        }
                     }
                 }
             }
