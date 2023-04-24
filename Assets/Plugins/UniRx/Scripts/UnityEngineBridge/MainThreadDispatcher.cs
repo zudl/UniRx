@@ -547,9 +547,15 @@ namespace UniRx
 
         IEnumerator RunEndOfFrameMicroCoroutine()
         {
+            var prevFrame = -1;
             while (true)
             {
-                yield return YieldInstructionCache.WaitForEndOfFrame;
+                do
+                {
+                    yield return YieldInstructionCache.WaitForEndOfFrame;
+                } while (Time.frameCount == prevFrame);
+                prevFrame = Time.frameCount;
+
                 endOfFrameMicroCoroutine.Run();
             }
         }
