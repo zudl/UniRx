@@ -1,22 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace UniRx.Operators
 {
     internal class DelayObservable<T> : OperatorObservableBase<T>
     {
-        readonly IObservable<T> source;
-        readonly TimeSpan dueTime;
-        readonly IScheduler scheduler;
+        readonly IObservable<T> _source;
+        readonly TimeSpan _dueTime;
+        readonly IScheduler _scheduler;
 
-        public DelayObservable(IObservable<T> source, TimeSpan dueTime, IScheduler scheduler) 
+        public DelayObservable(IObservable<T> source, TimeSpan dueTime, IScheduler scheduler)
             : base(scheduler == Scheduler.CurrentThread || source.IsRequiredSubscribeOnCurrentThread())
         {
-            this.source = source;
-            this.dueTime = dueTime;
-            this.scheduler = scheduler;
+            this._source = source;
+            this._dueTime = dueTime;
+            this._scheduler = scheduler;
         }
 
         protected override IDisposable SubscribeCore(IObserver<T> observer, IDisposable cancel)
@@ -26,79 +24,79 @@ namespace UniRx.Operators
 
         class Delay : OperatorObserverBase<T, T>
         {
-            readonly DelayObservable<T> parent;
-            readonly object gate = new object();
-            bool hasFailed;
-            bool running;
-            bool active;
-            Exception exception;
-            Queue<Timestamped<T>> queue;
-            bool onCompleted;
-            DateTimeOffset completeAt;
-            IDisposable sourceSubscription;
-            TimeSpan delay;
-            bool ready;
-            SerialDisposable cancelable;
+            readonly DelayObservable<T> _parent;
+            readonly object _gate = new object();
+            bool _hasFailed;
+            bool _running;
+            bool _active;
+            Exception _exception;
+            Queue<Timestamped<T>> _queue;
+            bool _hasCompleted;
+            DateTimeOffset _completeAt;
+            IDisposable _sourceSubscription;
+            TimeSpan _delay;
+            bool _ready;
+            SerialDisposable _cancelable;
 
             public Delay(DelayObservable<T> parent, IObserver<T> observer, IDisposable cancel) : base(observer, cancel)
             {
-                this.parent = parent;
+                this._parent = parent;
             }
 
             public IDisposable Run()
             {
-                cancelable = new SerialDisposable();
+                _cancelable = new SerialDisposable();
 
-                active = false;
-                running = false;
-                queue = new Queue<Timestamped<T>>();
-                onCompleted = false;
-                completeAt = default(DateTimeOffset);
-                hasFailed = false;
-                exception = default(Exception);
-                ready = true;
-                delay = Scheduler.Normalize(parent.dueTime);
+                _active = false;
+                _running = false;
+                _queue = new Queue<Timestamped<T>>();
+                _hasCompleted = false;
+                _completeAt = default(DateTimeOffset);
+                _hasFailed = false;
+                _exception = default(Exception);
+                _ready = true;
+                _delay = Scheduler.Normalize(_parent._dueTime);
 
-                var _sourceSubscription = new SingleAssignmentDisposable();
-                sourceSubscription = _sourceSubscription; // assign to field
-                _sourceSubscription.Disposable = parent.source.Subscribe(this);
+                var sourceSubscription = new SingleAssignmentDisposable();
+                _sourceSubscription = sourceSubscription;
+                sourceSubscription.Disposable = _parent._source.Subscribe(this);
 
-                return StableCompositeDisposable.Create(sourceSubscription, cancelable);
+                return StableCompositeDisposable.Create(_sourceSubscription, _cancelable);
             }
 
             public override void OnNext(T value)
             {
-                var next = parent.scheduler.Now.Add(delay);
+                var next = _parent._scheduler.Now.Add(_delay);
                 var shouldRun = false;
 
-                lock (gate)
+                lock (_gate)
                 {
-                    queue.Enqueue(new Timestamped<T>(value, next));
+                    _queue.Enqueue(new Timestamped<T>(value, next));
 
-                    shouldRun = ready && !active;
-                    active = true;
+                    shouldRun = _ready && !_active;
+                    _active = true;
                 }
 
                 if (shouldRun)
                 {
-                    cancelable.Disposable = parent.scheduler.Schedule(delay, DrainQueue);
+                    _cancelable.Disposable = _parent._scheduler.Schedule(_delay, DrainQueue);
                 }
             }
 
             public override void OnError(Exception error)
             {
-                sourceSubscription.Dispose();
+                _sourceSubscription.Dispose();
 
                 var shouldRun = false;
 
-                lock (gate)
+                lock (_gate)
                 {
-                    queue.Clear();
+                    _queue.Clear();
 
-                    exception = error;
-                    hasFailed = true;
+                    _exception = error;
+                    _hasFailed = true;
 
-                    shouldRun = !running;
+                    shouldRun = !_running;
                 }
 
                 if (shouldRun)
@@ -109,32 +107,32 @@ namespace UniRx.Operators
 
             public override void OnCompleted()
             {
-                sourceSubscription.Dispose();
+                _sourceSubscription.Dispose();
 
-                var next = parent.scheduler.Now.Add(delay);
+                var next = _parent._scheduler.Now.Add(_delay);
                 var shouldRun = false;
 
-                lock (gate)
+                lock (_gate)
                 {
-                    completeAt = next;
-                    onCompleted = true;
+                    _completeAt = next;
+                    _hasCompleted = true;
 
-                    shouldRun = ready && !active;
-                    active = true;
+                    shouldRun = _ready && !_active;
+                    _active = true;
                 }
 
                 if (shouldRun)
                 {
-                    cancelable.Disposable = parent.scheduler.Schedule(delay, DrainQueue);
+                    _cancelable.Disposable = _parent._scheduler.Schedule(_delay, DrainQueue);
                 }
             }
 
             void DrainQueue(Action<TimeSpan> recurse)
             {
-                lock (gate)
+                lock (_gate)
                 {
-                    if (hasFailed) return;
-                    running = true;
+                    if (_hasFailed) return;
+                    _running = true;
                 }
 
                 var shouldYield = false;
@@ -151,49 +149,49 @@ namespace UniRx.Operators
                     var shouldRecurse = false;
                     var recurseDueTime = default(TimeSpan);
 
-                    lock (gate)
+                    lock (_gate)
                     {
-                        if (hasFailed)
+                        if (_hasFailed)
                         {
-                            error = exception;
+                            error = _exception;
                             hasFailed = true;
-                            running = false;
+                            _running = false;
                         }
                         else
                         {
-                            if (queue.Count > 0)
+                            if (_queue.Count > 0)
                             {
-                                var nextDue = queue.Peek().Timestamp;
+                                var nextDue = _queue.Peek().Timestamp;
 
-                                if (nextDue.CompareTo(parent.scheduler.Now) <= 0 && !shouldYield)
+                                if (nextDue.CompareTo(_parent._scheduler.Now) <= 0 && !shouldYield)
                                 {
-                                    value = queue.Dequeue().Value;
+                                    value = _queue.Dequeue().Value;
                                     hasValue = true;
                                 }
                                 else
                                 {
                                     shouldRecurse = true;
-                                    recurseDueTime = Scheduler.Normalize(nextDue.Subtract(parent.scheduler.Now));
-                                    running = false;
+                                    recurseDueTime = Scheduler.Normalize(nextDue.Subtract(_parent._scheduler.Now));
+                                    _running = false;
                                 }
                             }
-                            else if (onCompleted)
+                            else if (_hasCompleted)
                             {
-                                if (completeAt.CompareTo(parent.scheduler.Now) <= 0 && !shouldYield)
+                                if (_completeAt.CompareTo(_parent._scheduler.Now) <= 0 && !shouldYield)
                                 {
                                     hasCompleted = true;
                                 }
                                 else
                                 {
                                     shouldRecurse = true;
-                                    recurseDueTime = Scheduler.Normalize(completeAt.Subtract(parent.scheduler.Now));
-                                    running = false;
+                                    recurseDueTime = Scheduler.Normalize(_completeAt.Subtract(_parent._scheduler.Now));
+                                    _running = false;
                                 }
                             }
                             else
                             {
-                                running = false;
-                                active = false;
+                                _running = false;
+                                _active = false;
                             }
                         }
                     }

@@ -2,7 +2,7 @@
 
 Original UniRx Created by Yoshifumi Kawai(neuecc)
 
-[![CircleCI](https://circleci.com/gh/neuecc/UniRx.svg?style=svg)](https://circleci.com/gh/neuecc/UniRx)  
+[![CircleCI](https://circleci.com/gh/neuecc/UniRx.svg?style=svg)](https://circleci.com/gh/neuecc/UniRx)
 [![Become a Backer](https://opencollective.com/unirx/tiers/backer.svg?avatarHeight=50)](https://opencollective.com/unirx) [![Become a Sponsor](https://opencollective.com/unirx/tiers/sponsor.svg?avatarHeight=50)](https://opencollective.com/unirx)
 
 This repository is a fork of the original UniRx, which can be found [here](https://github.com/neuecc/UniRx). The fork introduces several improvements and optimizations to the original codebase.
@@ -15,7 +15,7 @@ To fix [issues](https://github.com/neuecc/UniRx/issues/484) with Unity time scal
 
 ### Operator optimizations
 
-Some of the time-based operators were optimized to eliminate memory allocations. For example, `Throttle` operator [allocates](https://github.com/neuecc/UniRx/blob/master/Assets/Plugins/UniRx/Scripts/Operators/Throttle.cs) a new scheduler subscription on every OnNext call. To avoid such allocations `ThrottleNonAlloc` and `ThrottleFirstNonAlloc` operators were introduced. These operators utilize a single scheduler subscription allocated on Subscribe to periodically check if the next value should be emitted. For framecount-based operators `ThrottleFrame` and `ThrottleFirstFrame`, the original implementations were optimized in the same way.
+Some of the time-based operators were optimized to eliminate memory allocations. For example, `Throttle` operator allocates a new scheduler subscription on every OnNext call. To avoid such allocations `ThrottleNonAlloc`, `ThrottleFirstNonAlloc` and `DelayNonAlloc` operators were introduced. These operators utilize a single scheduler subscription allocated on Subscribe to periodically check if the next value should be emitted. For framecount-based operators `ThrottleFrame` and `ThrottleFirstFrame`, the original implementations were optimized in the same way.
 
 ### Helper methods
 
@@ -182,7 +182,7 @@ IEnumerator AsyncB()
 // main code
 // Observable.FromCoroutine converts IEnumerator to Observable<Unit>.
 // You can also use the shorthand, AsyncA().ToObservable()
-        
+
 // after AsyncA completes, run AsyncB as a continuous routine.
 // UniRx expands SelectMany(IEnumerator) as SelectMany(IEnumerator.ToObservable())
 var cancel = Observable.FromCoroutine(AsyncA)
@@ -211,7 +211,7 @@ IEnumerator TestNewCustomYieldInstruction()
     if (o.HasError) { Debug.Log(o.Error.ToString()); }
     if (o.HasResult) { Debug.Log(o.Result); }
 
-    // other sample(wait until transform.position.y >= 100) 
+    // other sample(wait until transform.position.y >= 100)
     yield return this.transform.ObserveEveryValueChanged(x => x.position).FirstOrDefault(p => p.y >= 100).ToYieldInstruction();
 }
 ```
@@ -226,7 +226,7 @@ public static IObservable<string> GetWWW(string url)
 }
 
 // IObserver is a callback publisher
-// Note: IObserver's basic scheme is "OnNext* (OnError | Oncompleted)?" 
+// Note: IObserver's basic scheme is "OnNext* (OnError | Oncompleted)?"
 static IEnumerator GetWWWCore(string url, IObserver<string> observer, CancellationToken cancellationToken)
 {
     var www = new UnityEngine.WWW(url);
@@ -309,7 +309,7 @@ Observable.WhenAll(heavyMethod, heavyMethod2)
         // Unity can't touch GameObject from other thread
         // but use ObserveOnMainThread, you can touch GameObject naturally.
         (GameObject.Find("myGuiText")).guiText.text = xs[0] + ":" + xs[1];
-    }); 
+    });
 ```
 
 ## DefaultScheduler
@@ -491,7 +491,7 @@ this.gameObject.OnMouseDownAsObservable()
     .TakeUntil(this.gameObject.OnMouseUpAsObservable())
     .Select(_ => Input.mousePosition)
     .RepeatUntilDestroy(this) // safety way
-    .Subscribe(x => Debug.Log(x));            
+    .Subscribe(x => Debug.Log(x));
 ```
 
 UniRx gurantees hot observable(FromEvent/Subject/ReactiveProperty/UnityUI.AsObservable..., there are like event) have unhandled exception durability. What is it? If subscribe in subcribe, does not detach event.
@@ -661,14 +661,14 @@ shows sequence element on `OnNext`, `OnError`, `OnCompleted`, `OnCancel`, `OnSub
 
 ```csharp
 // Unity's singleton UiThread Queue Scheduler
-Scheduler.MainThreadScheduler 
+Scheduler.MainThreadScheduler
 ObserveOnMainThread()/SubscribeOnMainThread()
 
 // Global StartCoroutine runner
 MainThreadDispatcher.StartCoroutine(enumerator)
 
 // convert Coroutine to IObservable
-Observable.FromCoroutine((observer, token) => enumerator(observer, token)); 
+Observable.FromCoroutine((observer, token) => enumerator(observer, token));
 
 // convert IObservable to Coroutine
 yield return Observable.Range(1, 10).ToYieldInstruction(); // after Unity 5.3, before can use StartAsCoroutine()
@@ -683,7 +683,7 @@ Observable.OnceApplicationQuit();
 
 UniRx provides a few framecount-based time operators:
 
-Method | 
+Method |
 -------|
 EveryUpdate|
 EveryFixedUpdate|
@@ -714,13 +714,13 @@ Every* Method's execution order is
 
 ```
 EveryGameObjectUpdate(in MainThreadDispatcher's Execution Order) ->
-EveryUpdate -> 
-EveryLateUpdate -> 
+EveryUpdate ->
+EveryLateUpdate ->
 EveryEndOfFrame
 ```
 
-EveryGameObjectUpdate invoke from same frame if caller is called before MainThreadDispatcher.Update(I recommend MainThreadDispatcher called first than others(ScriptExecutionOrder makes -32000)      
-EveryLateUpdate, EveryEndOfFrame invoke from same frame.  
+EveryGameObjectUpdate invoke from same frame if caller is called before MainThreadDispatcher.Update(I recommend MainThreadDispatcher called first than others(ScriptExecutionOrder makes -32000)
+EveryLateUpdate, EveryEndOfFrame invoke from same frame.
 EveryUpdate, invoke from next frame.
 
 ## MicroCoroutine
@@ -800,13 +800,13 @@ void Start()
     // Toggle, Input etc as Observable (OnValueChangedAsObservable is a helper providing isOn value on subscribe)
     // SubscribeToInteractable is an Extension Method, same as .interactable = x)
     MyToggle.OnValueChangedAsObservable().SubscribeToInteractable(MyButton);
-    
+
     // Input is displayed after a 1 second delay
     MyInput.OnValueChangedAsObservable()
         .Where(x => x != null)
         .Delay(TimeSpan.FromSeconds(1))
         .SubscribeToText(MyText); // SubscribeToText is helper for subscribe to text
-    
+
     // Converting for human readability
     MySlider.OnValueChangedAsObservable()
         .SubscribeToText(MyText, x => Math.Round(x, 2).ToString());
@@ -919,13 +919,13 @@ public class ReactivePresenter : MonoBehaviour
     // Presenter is aware of its View (binded in the inspector)
     public Button MyButton;
     public Toggle MyToggle;
-    
+
     // State-Change-Events from Model by ReactiveProperty
     Enemy enemy = new Enemy(1000);
 
     void Start()
     {
-        // Rx supplies user events from Views and Models in a reactive manner 
+        // Rx supplies user events from Views and Models in a reactive manner
         MyButton.OnClickAsObservable().Subscribe(_ => enemy.CurrentHp.Value -= 99);
         MyToggle.OnValueChangedAsObservable().SubscribeToInteractable(MyButton);
 
@@ -975,8 +975,8 @@ eventTrigger.OnBeginDragAsObservable()
 ## (Obsolete)PresenterBase
 
 > Note:
-> PresenterBase works enough, but too complex.  
-> You can use simple `Initialize` method and call parent to child, it works for most scenario.  
+> PresenterBase works enough, but too complex.
+> You can use simple `Initialize` method and call parent to child, it works for most scenario.
 > So I don't recommend using `PresenterBase`, sorry.
 
 ## ReactiveCommand, AsyncReactiveCommand
@@ -985,67 +985,67 @@ ReactiveCommand abstraction of button command with boolean interactable.
 
 ```csharp
 public class Player
-{		
-   public ReactiveProperty<int> Hp;		
-   public ReactiveCommand Resurrect;		
-		
+{
+   public ReactiveProperty<int> Hp;
+   public ReactiveCommand Resurrect;
+
    public Player()
-   {		
-        Hp = new ReactiveProperty<int>(1000);		
-        		
-        // If dead, can not execute.		
-        Resurrect = Hp.Select(x => x <= 0).ToReactiveCommand();		
-        // Execute when clicked		
-        Resurrect.Subscribe(_ =>		
-        {		
-             Hp.Value = 1000;		
-        }); 		
-    }		
-}		
-		
-public class Presenter : MonoBehaviour		
-{		
-    public Button resurrectButton;		
-		
-    Player player;		
-		
+   {
+        Hp = new ReactiveProperty<int>(1000);
+
+        // If dead, can not execute.
+        Resurrect = Hp.Select(x => x <= 0).ToReactiveCommand();
+        // Execute when clicked
+        Resurrect.Subscribe(_ =>
+        {
+             Hp.Value = 1000;
+        });
+    }
+}
+
+public class Presenter : MonoBehaviour
+{
+    public Button resurrectButton;
+
+    Player player;
+
     void Start()
-    {		
-      player = new Player();		
-		
-      // If Hp <= 0, can't press button.		
-      player.Resurrect.BindTo(resurrectButton);		
-    }		
-}		
-```		
-		
-AsyncReactiveCommand is a variation of ReactiveCommand that `CanExecute`(in many cases bind to button's interactable) is changed to false until asynchronous execution was finished.		
-		
-```csharp		
-public class Presenter : MonoBehaviour		
-{		
-    public UnityEngine.UI.Button button;		
-		
+    {
+      player = new Player();
+
+      // If Hp <= 0, can't press button.
+      player.Resurrect.BindTo(resurrectButton);
+    }
+}
+```
+
+AsyncReactiveCommand is a variation of ReactiveCommand that `CanExecute`(in many cases bind to button's interactable) is changed to false until asynchronous execution was finished.
+
+```csharp
+public class Presenter : MonoBehaviour
+{
+    public UnityEngine.UI.Button button;
+
     void Start()
-    {		
-        var command = new AsyncReactiveCommand();		
-		
-        command.Subscribe(_ =>		
-        {		
-            // heavy, heavy, heavy method....		
-            return Observable.Timer(TimeSpan.FromSeconds(3)).AsUnitObservable();		
-        });		
-		
-        // after clicked, button shows disable for 3 seconds		
-        command.BindTo(button);		
-		
-        // Note:shortcut extension, bind aync onclick directly		
-        button.BindToOnClick(_ =>		
-        {		
-            return Observable.Timer(TimeSpan.FromSeconds(3)).AsUnitObservable();		
-        });		
-    }		
-}		
+    {
+        var command = new AsyncReactiveCommand();
+
+        command.Subscribe(_ =>
+        {
+            // heavy, heavy, heavy method....
+            return Observable.Timer(TimeSpan.FromSeconds(3)).AsUnitObservable();
+        });
+
+        // after clicked, button shows disable for 3 seconds
+        command.BindTo(button);
+
+        // Note:shortcut extension, bind aync onclick directly
+        button.BindToOnClick(_ =>
+        {
+            return Observable.Timer(TimeSpan.FromSeconds(3)).AsUnitObservable();
+        });
+    }
+}
 ```
 
 `AsyncReactiveCommand` has three constructor.
@@ -1258,8 +1258,8 @@ Support thread on the Unity forum. Ask me any question - [http://forum.unity3d.c
 
 Become a backer, Sponsored, one time donation are welcome, we're using [Open Collective - UniRx](https://opencollective.com/unirx/#)
 
-We welcome any contributions, be they bug reports, requests or pull request.  
-Please consult and submit your reports or requests on GitHub issues.  
+We welcome any contributions, be they bug reports, requests or pull request.
+Please consult and submit your reports or requests on GitHub issues.
 Source code is available in `Assets/Plugins/UniRx/Scripts`.
 
 ## Author's other Unity + LINQ Assets
@@ -1270,12 +1270,12 @@ Source code is available in `Assets/Plugins/UniRx/Scripts`.
 
 ## Author Info
 
-Yoshifumi Kawai(a.k.a. neuecc) is a software developer in Japan.  
-Currently founded consulting company [New World, Inc.](http://new-world.co/)  
+Yoshifumi Kawai(a.k.a. neuecc) is a software developer in Japan.
+Currently founded consulting company [New World, Inc.](http://new-world.co/)
 He is awarding Microsoft MVP for Visual C# since 2011.
 
-Blog: https://medium.com/@neuecc (English)  
-Blog: http://neue.cc/ (Japanese)   
+Blog: https://medium.com/@neuecc (English)
+Blog: http://neue.cc/ (Japanese)
 Twitter: https://twitter.com/neuecc (Japanese)
 
 ## License

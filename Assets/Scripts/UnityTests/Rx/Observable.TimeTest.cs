@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -386,6 +385,95 @@ namespace UniRx.Tests
 
             yield return Observable.ReturnUnit()
                 .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+
+            elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+
+            Time.timeScale = 1f;
+        }
+
+        [Test]
+        public void DelayNonAllocTest()
+        {
+            var now = Scheduler.ThreadPool.Now;
+
+            var xs = Observable.Range(1, 3)
+                .DelayNonAlloc(TimeSpan.FromSeconds(1))
+                .Timestamp()
+                .ToArray()
+                .Wait();
+
+            xs[0].Value.Is(1);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            xs[1].Value.Is(2);
+            (now.AddMilliseconds(800) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            xs[2].Value.Is(3);
+            (now.AddMilliseconds(800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+        }
+
+        [UnityTest]
+        public IEnumerator ScaledDelayNonAllocTest()
+        {
+            const float Period = 2f;
+            const float HighTimeScale = 2f;
+            const float LowTimeScale = 0.5f;
+            const float ErrorMs = 200;
+            var scaledScheduler = Scheduler.MainThread;
+
+            Time.timeScale = HighTimeScale;
+            var timeOnStart = Time.unscaledTime;
+
+            yield return null;
+
+            yield return Observable.ReturnUnit()
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), scaledScheduler)
+                .ToAwaitableEnumerator();
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period / HighTimeScale - ErrorMs && ms < Period / HighTimeScale + ErrorMs);
+
+            Time.timeScale = LowTimeScale;
+            timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), scaledScheduler)
+                .ToAwaitableEnumerator();
+
+            elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period / LowTimeScale - ErrorMs && ms < Period / LowTimeScale + ErrorMs);
+
+            Time.timeScale = 1f;
+        }
+
+        [UnityTest]
+        public IEnumerator UnscaledDelayNonAllocTest()
+        {
+            const float Period = 2f;
+            const float HighTimeScale = 2f;
+            const float LowTimeScale = 0.5f;
+            const float ErrorMs = 200;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
+
+            Time.timeScale = HighTimeScale;
+            var timeOnStart = Time.unscaledTime;
+
+            yield return null;
+
+            yield return Observable.ReturnUnit()
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+
+            Time.timeScale = LowTimeScale;
+            timeOnStart = Time.unscaledTime;
+
+            yield return Observable.ReturnUnit()
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), unscaledScheduler)
                 .ToAwaitableEnumerator();
 
             elapsed = Time.unscaledTime - timeOnStart;

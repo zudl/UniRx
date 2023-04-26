@@ -22,7 +22,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard Throttle operator which allocates a new scheduler subscription on every OnNext call,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
         /// limited by frame duration in case of main thread schedulers.
         /// </remarks>
@@ -36,7 +36,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard Throttle operator which allocates a new scheduler subscription on every OnNext call,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
         /// limited by frame duration in case of main thread schedulers.
         /// </remarks>
@@ -50,7 +50,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard Throttle operator which allocates a new scheduler subscription on every OnNext call,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with timeStep accuracy.
         /// </remarks>
         /// <param name="timeStep">Internal timer period</param>
@@ -64,7 +64,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard Throttle operator which allocates a new scheduler subscription on every OnNext call,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with timeStep accuracy.
         /// </remarks>
         /// <param name="timeStep">Internal timer period</param>
@@ -78,7 +78,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard ThrottleFirst operator which allocates a new scheduler subscription for every emitted value,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
         /// limited by frame duration in case of main thread schedulers.
         /// </remarks>
@@ -92,7 +92,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard ThrottleFirst operator which allocates a new scheduler subscription for every emitted value,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
         /// limited by frame duration in case of main thread schedulers.
         /// </remarks>
@@ -106,7 +106,7 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard ThrottleFirst operator which allocates a new scheduler subscription for every emitted value,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with timeStep accuracy.
         /// </remarks>
         /// <param name="timeStep">Internal timer period</param>
@@ -120,13 +120,70 @@ namespace UniRx
         /// </summary>
         /// <remarks>
         /// Unlike standard ThrottleFirst operator which allocates a new scheduler subscription for every emitted value,
-        /// this implementation uses single scheduler subscription allocated on Subscribe.
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
         /// Time intervals are measured with timeStep accuracy.
         /// </remarks>
         /// <param name="timeStep">Internal timer period</param>
         public static IObservable<TSource> ThrottleFirstNonAlloc<TSource>(this IObservable<TSource> source, TimeSpan dueTime, TimeSpan timeStep, IScheduler scheduler)
         {
             return new ThrottleFirstNonAllocObservable<TSource>(source, dueTime, timeStep, scheduler);
+        }
+
+
+        /// <summary>
+        /// A Delay implementation that doesn't allocate memory after subscription.
+        /// </summary>
+        /// <remarks>
+        /// Unlike standard Delay operator which allocates a new scheduler subscription for every emitted value,
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
+        /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
+        /// limited by frame duration in case of main thread schedulers.
+        /// </remarks>
+        public static IObservable<T> DelayNonAlloc<T>(this IObservable<T> source, TimeSpan dueTime)
+        {
+            return source.DelayNonAlloc(dueTime, _defaultStepwiseOperatorAccuracy, Scheduler.DefaultSchedulers.TimeBasedOperations);
+        }
+
+        /// <summary>
+        /// A Delay implementation that doesn't allocate memory after subscription.
+        /// </summary>
+        /// <remarks>
+        /// Unlike standard Delay operator which allocates a new scheduler subscription for every emitted value,
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
+        /// Time intervals are measured with precision of Observable.DefaultStepwiseOperatorAccuracy,
+        /// limited by frame duration in case of main thread schedulers.
+        /// </remarks>
+        public static IObservable<T> DelayNonAlloc<T>(this IObservable<T> source, TimeSpan dueTime, IScheduler scheduler)
+        {
+            return source.DelayNonAlloc(dueTime, _defaultStepwiseOperatorAccuracy, scheduler);
+        }
+
+        /// <summary>
+        /// A Delay implementation that doesn't allocate memory after subscription.
+        /// </summary>
+        /// <remarks>
+        /// Unlike standard Delay operator which allocates a new scheduler subscription for every emitted value,
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
+        /// Time intervals are measured with timeStep accuracy.
+        /// </remarks>
+        /// <param name="timeStep">Internal timer period</param>
+        public static IObservable<T> DelayNonAlloc<T>(this IObservable<T> source, TimeSpan dueTime, TimeSpan timeStep)
+        {
+            return source.DelayNonAlloc(dueTime, timeStep, Scheduler.DefaultSchedulers.TimeBasedOperations);
+        }
+
+        /// <summary>
+        /// A Delay implementation that doesn't allocate memory after subscription.
+        /// </summary>
+        /// <remarks>
+        /// Unlike standard Delay operator which allocates a new scheduler subscription for every emitted value,
+        /// this implementation uses a single scheduler subscription allocated on Subscribe.
+        /// Time intervals are measured with timeStep accuracy.
+        /// </remarks>
+        /// <param name="timeStep">Internal timer period</param>
+        public static IObservable<TSource> DelayNonAlloc<TSource>(this IObservable<TSource> source, TimeSpan dueTime, TimeSpan timeStep, IScheduler scheduler)
+        {
+            return new DelayNonAllocObservable<TSource>(source, dueTime, timeStep, scheduler);
         }
     }
 }
