@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using UnityEngine;
 using UnityEngine.TestTools;
 
 namespace UniRx.Tests
@@ -59,6 +61,73 @@ namespace UniRx.Tests
             emittedValues[0].Value.Is(1);
             emittedValues[1].Value.Is(4);
             emittedValues[2].Kind.Is(NotificationKind.OnCompleted);
+        }
+
+        [UnityTest]
+        public IEnumerator DelayFrameCompleteTest()
+        {
+            yield return null;
+
+            const int Delay = 5;
+            ValueTuple<Notification<int>, int>[] result = null;
+
+            yield return Observable.Concat(
+                    Observable.Repeat(Unit.Default, 3), // emit 3 values on frame 0
+                    Observable.EveryUpdate() // skip 1 frame to sync with Unity loop and 1 waiting for next Update
+                        .Take(9)
+                        .Where(index => index == 0  // emit 1 value on frame 2
+                                        || index == 4  // emit 1 value on frame 6
+                                        || index == 5) // emit 1 value on frame 7
+                        .AsUnitObservable() // complete on frame 10
+                )
+                .Select(_ => Time.frameCount)
+                .DelayFrame(Delay, FrameCountType.EndOfFrame)
+                .Materialize()
+                .Select(n => new ValueTuple<Notification<int>, int>(n, Time.frameCount))
+                .ToArray()
+                .Do(array => result = array)
+                .ToYieldInstruction();
+
+            result.Length.Is(7);
+
+            for (var i = 0; i < 6; i++)
+            {
+                result[i].Item1.Kind.Is(NotificationKind.OnNext);
+                result[i].Item2.Is(result[i].Item1.Value + Delay);
+            }
+            result[6].Item1.Kind.Is(NotificationKind.OnCompleted);
+            result[6].Item2.Is(result[0].Item2 + 10);
+        }
+
+        [UnityTest]
+        public IEnumerator DelayFrameErrorTest()
+        {
+            yield return null;
+
+            const int Delay = 5;
+            ValueTuple<Notification<int>, int>[] result = null;
+
+            yield return Observable.Concat(
+                    Observable.EveryUpdate().Take(10).AsUnitObservable(), // emit 1 value each frame during 10 frames
+                    Observable.Throw<Unit>(new Exception()) // throw on frame 10
+                )
+                .Select(_ => Time.frameCount)
+                .DelayFrame(Delay, FrameCountType.EndOfFrame)
+                .Materialize()
+                .Select(n => new ValueTuple<Notification<int>, int>(n, Time.frameCount))
+                .ToArray()
+                .Do(array => result = array)
+                .ToYieldInstruction();
+
+            result.Length.Is(5);
+
+            for (var i = 0; i < 4; i++)
+            {
+                result[i].Item1.Kind.Is(NotificationKind.OnNext);
+                result[i].Item2.Is(result[i].Item1.Value + Delay);
+            }
+            result[4].Item1.Kind.Is(NotificationKind.OnError);
+            result[4].Item2.Is(result[3].Item2 + 1);
         }
     }
 }

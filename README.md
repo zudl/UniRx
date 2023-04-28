@@ -15,7 +15,7 @@ To fix [issues](https://github.com/neuecc/UniRx/issues/484) with Unity time scal
 
 ### Operator optimizations
 
-Some of the time-based operators were optimized to eliminate memory allocations. For example, `Throttle` operator allocates a new scheduler subscription on every OnNext call. To avoid such allocations `ThrottleNonAlloc`, `ThrottleFirstNonAlloc` and `DelayNonAlloc` operators were introduced. These operators utilize a single scheduler subscription allocated on Subscribe to periodically check if the next value should be emitted. For framecount-based operators `ThrottleFrame` and `ThrottleFirstFrame`, the original implementations were optimized in the same way.
+Some of the time-based operators were optimized to eliminate memory allocations. For example, `Throttle` operator allocates a new scheduler subscription on every OnNext call. To avoid such allocations `ThrottleNonAlloc`, `ThrottleFirstNonAlloc` and `DelayNonAlloc` operators were introduced. These operators utilize a single scheduler subscription allocated on Subscribe to periodically check if the next value should be emitted. For framecount-based operators `ThrottleFrame`, `ThrottleFirstFrame` and `DelayFrame`, the original implementations were optimized in the same way.
 
 ### Helper methods
 
