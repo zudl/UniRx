@@ -30,7 +30,12 @@ namespace UniRx.Operators
             readonly object _gate = new object();
             Queue<Timestamped<T>> _queue;
             TimeSpan _delay;
-            DateTimeOffset? _completeAt;
+            bool _isStopped;
+            bool _isRunningOnNext;
+            bool _errorOccuredWhileRunningOnNext;
+            Exception _error;
+            bool _hasSourceCompleted;
+            DateTimeOffset _completeAt;
             IDisposable _sourceSubscription;
             IDisposable _timerSubscription;
 
@@ -42,7 +47,6 @@ namespace UniRx.Operators
             public IDisposable Run()
             {
                 _queue = new Queue<Timestamped<T>>();
-                _completeAt = null;
                 _delay = Scheduler.Normalize(_parent._dueTime);
 
                 _timerSubscription = CreateTimer();
@@ -64,13 +68,19 @@ namespace UniRx.Operators
 
             public override void OnError(Exception error)
             {
-                _timerSubscription.Dispose();
                 _sourceSubscription.Dispose();
 
                 lock (_gate)
                 {
-                    ForwardOnError(error);
+                    if (_isRunningOnNext)
+                    {
+                        _error = error;
+                        _errorOccuredWhileRunningOnNext = true;
+                        return;
+                    }
                 }
+
+                ForwardOnErrorAndStop(error);
             }
 
             public override void OnCompleted()
@@ -82,6 +92,7 @@ namespace UniRx.Operators
                 lock (_gate)
                 {
                     _completeAt = next;
+                    _hasSourceCompleted = true;
                 }
             }
 
@@ -98,21 +109,40 @@ namespace UniRx.Operators
 
             void Tick()
             {
+                var hasValue = false;
+                var value = default(T);
                 lock (_gate)
                 {
-                    if (_queue.Count > 0)
+                    if (_isStopped)
                     {
-                        if (_queue.Peek().Timestamp <= _parent._scheduler.Now)
-                        {
-                            ForwardOnNext(_queue.Dequeue().Value);
-                        }
                         return;
                     }
-
-                    if (_completeAt.HasValue && _completeAt.Value <= _parent._scheduler.Now)
+                    if (_queue.Count > 0 && _queue.Peek().Timestamp <= _parent._scheduler.Now)
                     {
-                        ForwardOnCompleted();
+                        hasValue = true;
+                        value = _queue.Dequeue().Value;
+                        _isRunningOnNext = true;
                     }
+                }
+
+                if (hasValue)
+                {
+                    ForwardOnNext(value);
+                    lock (_gate)
+                    {
+                        _isRunningOnNext = false;
+                    }
+
+                    if (_errorOccuredWhileRunningOnNext)
+                    {
+                        ForwardOnErrorAndStop(_error);
+                    }
+                    return;
+                }
+
+                if (_hasSourceCompleted && _completeAt <= _parent._scheduler.Now)
+                {
+                    ForwardOnCompleteAndStop();
                 }
             }
 
@@ -126,9 +156,14 @@ namespace UniRx.Operators
                 observer.OnNext(value);
             }
 
-            void ForwardOnCompleted() {
+            void ForwardOnCompleteAndStop() {
+                _timerSubscription.Dispose();
+                lock (_gate)
+                {
+                    _queue.Clear();
+                    _isStopped = true;
+                }
                 try {
-                    _timerSubscription.Dispose();
                     observer.OnCompleted();
                 }
                 finally {
@@ -136,8 +171,13 @@ namespace UniRx.Operators
                 }
             }
 
-            void ForwardOnError(Exception error) {
-                _queue.Clear();
+            void ForwardOnErrorAndStop(Exception error) {
+                _timerSubscription.Dispose();
+                lock (_gate)
+                {
+                    _queue.Clear();
+                    _isStopped = true;
+                }
                 try {
                     observer.OnError(error);
                 }

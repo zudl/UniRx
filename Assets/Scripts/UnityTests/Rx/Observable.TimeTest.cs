@@ -305,24 +305,64 @@ namespace UniRx.Tests
         }
 
         [Test]
-        public void DelayTest()
+        public void DelayCompleteTest()
         {
             var now = Scheduler.ThreadPool.Now;
 
-            var xs = Observable.Range(1, 3)
+            var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
+                .Take(4)
+                .Where(c => c < 3)
                 .Delay(TimeSpan.FromSeconds(1))
+                .Materialize()
                 .Timestamp()
                 .ToArray()
                 .Wait();
 
-            xs[0].Value.Is(1);
+            xs[0].Value.Kind.Is(NotificationKind.OnNext);
+            xs[0].Value.Value.Is(0);
             (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
 
-            xs[1].Value.Is(2);
-            (now.AddMilliseconds(800) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            xs[1].Value.Kind.Is(NotificationKind.OnNext);
+            xs[1].Value.Value.Is(1);
+            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
 
-            xs[2].Value.Is(3);
-            (now.AddMilliseconds(800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            xs[2].Value.Kind.Is(NotificationKind.OnNext);
+            xs[2].Value.Value.Is(2);
+            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
+
+            xs[3].Value.Kind.Is(NotificationKind.OnCompleted);
+            (now.AddMilliseconds(2300) <= xs[3].Timestamp && xs[3].Timestamp <= now.AddMilliseconds(2700)).IsTrue();
+        }
+
+        [Test]
+        public void DelayErrorTest()
+        {
+            var now = Scheduler.ThreadPool.Now;
+
+            var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
+                .Take(4)
+                .Do(c =>
+                {
+                    if (c == 3)
+                    {
+                        throw new Exception();
+                    }
+                })
+                .Delay(TimeSpan.FromSeconds(1))
+                .Materialize()
+                .Timestamp()
+                .ToArray()
+                .Wait();
+
+            (xs.Length <= 3).IsTrue();
+
+            xs[0].Value.Kind.Is(NotificationKind.OnNext);
+            xs[0].Value.Value.Is(0);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            var last = xs[xs.Length - 1];
+            last.Value.Kind.Is(NotificationKind.OnError);
+            (now.AddMilliseconds(1300) <= last.Timestamp && last.Timestamp <= now.AddMilliseconds(1700)).IsTrue();
         }
 
         [UnityTest]
@@ -394,24 +434,64 @@ namespace UniRx.Tests
         }
 
         [Test]
-        public void DelayNonAllocTest()
+        public void DelayNonAllocCompleteTest()
         {
             var now = Scheduler.ThreadPool.Now;
 
-            var xs = Observable.Range(1, 3)
+            var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
+                .Take(4)
+                .Where(c => c < 3)
                 .DelayNonAlloc(TimeSpan.FromSeconds(1))
+                .Materialize()
                 .Timestamp()
                 .ToArray()
                 .Wait();
 
-            xs[0].Value.Is(1);
+            xs[0].Value.Kind.Is(NotificationKind.OnNext);
+            xs[0].Value.Value.Is(0);
             (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
 
-            xs[1].Value.Is(2);
-            (now.AddMilliseconds(800) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            xs[1].Value.Kind.Is(NotificationKind.OnNext);
+            xs[1].Value.Value.Is(1);
+            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
 
-            xs[2].Value.Is(3);
-            (now.AddMilliseconds(800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            xs[2].Value.Kind.Is(NotificationKind.OnNext);
+            xs[2].Value.Value.Is(2);
+            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
+
+            xs[3].Value.Kind.Is(NotificationKind.OnCompleted);
+            (now.AddMilliseconds(2300) <= xs[3].Timestamp && xs[3].Timestamp <= now.AddMilliseconds(2700)).IsTrue();
+        }
+
+        [Test]
+        public void DelayNonAllocErrorTest()
+        {
+            var now = Scheduler.ThreadPool.Now;
+
+            var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
+                .Take(4)
+                .Do(c =>
+                {
+                    if (c == 3)
+                    {
+                        throw new Exception();
+                    }
+                })
+                .DelayNonAlloc(TimeSpan.FromSeconds(1))
+                .Materialize()
+                .Timestamp()
+                .ToArray()
+                .Wait();
+
+            (xs.Length <= 3).IsTrue();
+
+            xs[0].Value.Kind.Is(NotificationKind.OnNext);
+            xs[0].Value.Value.Is(0);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+
+            var last = xs[xs.Length - 1];
+            last.Value.Kind.Is(NotificationKind.OnError);
+            (now.AddMilliseconds(1300) <= last.Timestamp && last.Timestamp <= now.AddMilliseconds(1700)).IsTrue();
         }
 
         [UnityTest]
