@@ -19,7 +19,7 @@ Some of the time-based operators were optimized to eliminate memory allocations.
 
 ### Helper methods
 
-A few helper methods such as `Observable.WhereNull()`, `Observable.WhereNotNull()`, `Observable.Do/Subscribe(ReactiveProperty)`, `Observable.Do/Subscribe(ReactiveCommand)` were added.
+A few helper methods such as `IObservable.WhereNull()`, `IObservable.WhereNotNull()`, `IObservable.Do/Subscribe(ReactiveProperty)`, `IObservable.Do/Subscribe(ReactiveCommand)` and `IReadOnlyReactiveCollection.ObserveCollectionChanged` were added.
 
 ### Improved Newtonsoft JSON support
 

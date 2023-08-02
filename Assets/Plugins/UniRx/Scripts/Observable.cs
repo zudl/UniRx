@@ -169,6 +169,26 @@ namespace UniRx
             return new DoObservable<T>(source, onNext, onError, onCompleted);
         }
 
+        public static IObservable<Unit> Do(this IObservable<Unit> source, Action onNext)
+        {
+            return new DoObservable<Unit>(source, _ => onNext.Invoke(), Stubs.Throw, Stubs.Nop);
+        }
+
+        public static IObservable<Unit> Do(this IObservable<Unit> source, Action onNext, Action<Exception> onError)
+        {
+            return new DoObservable<Unit>(source, _ => onNext.Invoke(), onError, Stubs.Nop);
+        }
+
+        public static IObservable<Unit> Do(this IObservable<Unit> source, Action onNext, Action onCompleted)
+        {
+            return new DoObservable<Unit>(source, _ => onNext.Invoke(), Stubs.Throw, onCompleted);
+        }
+
+        public static IObservable<Unit> Do(this IObservable<Unit> source, Action onNext, Action<Exception> onError, Action onCompleted)
+        {
+            return new DoObservable<Unit>(source, _ => onNext.Invoke(), onError, onCompleted);
+        }
+
         public static IObservable<T> DoOnError<T>(this IObservable<T> source, Action<Exception> onError)
         {
             return new DoOnErrorObservable<T>(source, onError);

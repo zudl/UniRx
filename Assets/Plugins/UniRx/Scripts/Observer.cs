@@ -429,6 +429,26 @@ namespace UniRx
             return source.Subscribe(Observer.CreateSubscribeObserver(onNext, onError, onCompleted));
         }
 
+        public static IDisposable Subscribe(this IObservable<Unit> source, Action onNext)
+        {
+            return source.Subscribe(Observer.CreateSubscribeObserver<Unit>(_ => onNext.Invoke(), Stubs.Throw, Stubs.Nop));
+        }
+
+        public static IDisposable Subscribe(this IObservable<Unit> source, Action onNext, Action<Exception> onError)
+        {
+            return source.Subscribe(Observer.CreateSubscribeObserver<Unit>(_ => onNext.Invoke(), onError, Stubs.Nop));
+        }
+
+        public static IDisposable Subscribe(this IObservable<Unit> source, Action onNext, Action onCompleted)
+        {
+            return source.Subscribe(Observer.CreateSubscribeObserver<Unit>(_ => onNext.Invoke(), Stubs.Throw, onCompleted));
+        }
+
+        public static IDisposable Subscribe(this IObservable<Unit> source, Action onNext, Action<Exception> onError, Action onCompleted)
+        {
+            return source.Subscribe(Observer.CreateSubscribeObserver<Unit>(_ => onNext.Invoke(), onError, onCompleted));
+        }
+
         public static IDisposable SubscribeWithState<T, TState>(this IObservable<T> source, TState state, Action<T, TState> onNext)
         {
             return source.Subscribe(Observer.CreateSubscribeWithStateObserver(state, onNext, Stubs<TState>.Throw, Stubs<TState>.Ignore));

@@ -516,5 +516,10 @@ namespace UniRx
         {
             return new ReactiveDictionary<TKey, TValue>(dictionary);
         }
+
+        public static IObservable<Unit> ObserveCollectionChanged<TKey, TValue>(this IReadOnlyReactiveDictionary<TKey, TValue> dictionary, bool notifyCurrent = false)
+        {
+            return Observable.Merge(dictionary.ObserveCountChanged(notifyCurrent).AsUnitObservable(), dictionary.ObserveReplace().AsUnitObservable());
+        }
     }
 }

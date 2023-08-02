@@ -319,7 +319,7 @@ namespace UniRx
         {
             Dispose(true);
         }
-        
+
         #endregion
     }
 
@@ -328,6 +328,14 @@ namespace UniRx
         public static ReactiveCollection<T> ToReactiveCollection<T>(this IEnumerable<T> source)
         {
             return new ReactiveCollection<T>(source);
+        }
+
+        public static IObservable<Unit> ObserveCollectionChanged<T>(this IReadOnlyReactiveCollection<T> collection, bool notifyCurrent = false)
+        {
+            return Observable.Merge(
+                collection.ObserveCountChanged(notifyCurrent).AsUnitObservable(),
+                collection.ObserveReplace().AsUnitObservable(),
+                collection.ObserveMove().AsUnitObservable());
         }
     }
 }
