@@ -3,9 +3,13 @@ using System;
 using System.Reflection;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using UnityEngine.Scripting;
 
 namespace UniRx.Json {
     public class ReactivePropertyConverter : JsonConverter {
+        [Preserve]
+        public ReactivePropertyConverter() : base() { }
+
         public override void WriteJson(JsonWriter writer, object reactiveProperty, JsonSerializer serializer) {
             var type = reactiveProperty.GetType();
             var propertyInfo = type.GetProperty("Value", BindingFlags.Instance | BindingFlags.Public);
