@@ -449,6 +449,36 @@ namespace UniRx
             return source.Subscribe(Observer.CreateSubscribeObserver<Unit>(_ => onNext.Invoke(), onError, onCompleted));
         }
 
+        public static IDisposable Subscribe<T1, T2>(this IObservable<Tuple<T1, T2>> source, Action<T1, T2> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2));
+        }
+
+        public static IDisposable Subscribe<T1, T2, T3>(this IObservable<Tuple<T1, T2, T3>> source, Action<T1, T2, T3> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IDisposable Subscribe<T1, T2, T3, T4>(this IObservable<Tuple<T1, T2, T3, T4>> source, Action<T1, T2, T3, T4> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
+        public static IDisposable Subscribe<T1, T2>(this IObservable<ValueTuple<T1, T2>> source, Action<T1, T2> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2));
+        }
+
+        public static IDisposable Subscribe<T1, T2, T3>(this IObservable<ValueTuple<T1, T2, T3>> source, Action<T1, T2, T3> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IDisposable Subscribe<T1, T2, T3, T4>(this IObservable<ValueTuple<T1, T2, T3, T4>> source, Action<T1, T2, T3, T4> onNext)
+        {
+            return source.Subscribe(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
         public static IDisposable SubscribeWithState<T, TState>(this IObservable<T> source, TState state, Action<T, TState> onNext)
         {
             return source.Subscribe(Observer.CreateSubscribeWithStateObserver(state, onNext, Stubs<TState>.Throw, Stubs<TState>.Ignore));

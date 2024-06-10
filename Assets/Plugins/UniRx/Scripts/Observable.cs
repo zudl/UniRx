@@ -35,6 +35,36 @@ namespace UniRx
             return new SelectObservable<T, TR>(source, selector);
         }
 
+        public static IObservable<TR> Select<T1, T2, TR>(this IObservable<Tuple<T1, T2>> source, Func<T1, T2, TR> selector)
+        {
+            return new SelectObservable<Tuple<T1, T2>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<TR> Select<T1, T2, T3, TR>(this IObservable<Tuple<T1, T2, T3>> source, Func<T1, T2, T3, TR> selector)
+        {
+            return new SelectObservable<Tuple<T1, T2, T3>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<TR> Select<T1, T2, T3, T4, TR>(this IObservable<Tuple<T1, T2, T3, T4>> source, Func<T1, T2, T3, T4, TR> selector)
+        {
+            return new SelectObservable<Tuple<T1, T2, T3, T4>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
+        public static IObservable<TR> Select<T1, T2, TR>(this IObservable<ValueTuple<T1, T2>> source, Func<T1, T2, TR> selector)
+        {
+            return new SelectObservable<ValueTuple<T1, T2>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<TR> Select<T1, T2, T3, TR>(this IObservable<ValueTuple<T1, T2, T3>> source, Func<T1, T2, T3, TR> selector)
+        {
+            return new SelectObservable<ValueTuple<T1, T2, T3>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<TR> Select<T1, T2, T3, T4, TR>(this IObservable<ValueTuple<T1, T2, T3, T4>> source, Func<T1, T2, T3, T4, TR> selector)
+        {
+            return new SelectObservable<ValueTuple<T1, T2, T3, T4>, TR>(source, tuple => selector.Invoke(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
         public static IObservable<TR> Select<T, TR>(this IObservable<T> source, Func<T, int, TR> selector)
         {
             return new SelectObservable<T, TR>(source, selector);
@@ -56,6 +86,36 @@ namespace UniRx
             }
 
             return new WhereObservable<T>(source, predicate);
+        }
+
+        public static IObservable<Tuple<T1, T2>> Where<T1, T2>(this IObservable<Tuple<T1, T2>> source, Func<T1, T2, bool> predicate)
+        {
+            return new WhereObservable<Tuple<T1, T2>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<Tuple<T1, T2, T3>> Where<T1, T2, T3>(this IObservable<Tuple<T1, T2, T3>> source, Func<T1, T2, T3, bool> predicate)
+        {
+            return new WhereObservable<Tuple<T1, T2, T3>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<Tuple<T1, T2, T3, T4>> Where<T1, T2, T3, T4>(this IObservable<Tuple<T1, T2, T3, T4>> source, Func<T1, T2, T3, T4, bool> predicate)
+        {
+            return new WhereObservable<Tuple<T1, T2, T3, T4>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
+        public static IObservable<ValueTuple<T1, T2>> Where<T1, T2>(this IObservable<ValueTuple<T1, T2>> source, Func<T1, T2, bool> predicate)
+        {
+            return new WhereObservable<ValueTuple<T1, T2>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<ValueTuple<T1, T2, T3>> Where<T1, T2, T3>(this IObservable<ValueTuple<T1, T2, T3>> source, Func<T1, T2, T3, bool> predicate)
+        {
+            return new WhereObservable<ValueTuple<T1, T2, T3>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<ValueTuple<T1, T2, T3, T4>> Where<T1, T2, T3, T4>(this IObservable<ValueTuple<T1, T2, T3, T4>> source, Func<T1, T2, T3, T4, bool> predicate)
+        {
+            return new WhereObservable<ValueTuple<T1, T2, T3, T4>>(source, tuple => predicate.Invoke(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
         }
 
         public static IObservable<T> Where<T>(this IObservable<T> source, Func<T, int, bool> predicate)
@@ -187,6 +247,36 @@ namespace UniRx
         public static IObservable<Unit> Do(this IObservable<Unit> source, Action onNext, Action<Exception> onError, Action onCompleted)
         {
             return new DoObservable<Unit>(source, _ => onNext.Invoke(), onError, onCompleted);
+        }
+
+        public static IObservable<Tuple<T1, T2>> Do<T1, T2>(this IObservable<Tuple<T1, T2>> source, Action<T1, T2> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<Tuple<T1, T2, T3>> Do<T1, T2, T3>(this IObservable<Tuple<T1, T2, T3>> source, Action<T1, T2, T3> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<Tuple<T1, T2, T3, T4>> Do<T1, T2, T3, T4>(this IObservable<Tuple<T1, T2, T3, T4>> source, Action<T1, T2, T3, T4> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
+        }
+
+        public static IObservable<ValueTuple<T1, T2>> Do<T1, T2>(this IObservable<ValueTuple<T1, T2>> source, Action<T1, T2> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2));
+        }
+
+        public static IObservable<ValueTuple<T1, T2, T3>> Do<T1, T2, T3>(this IObservable<ValueTuple<T1, T2, T3>> source, Action<T1, T2, T3> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3));
+        }
+
+        public static IObservable<ValueTuple<T1, T2, T3, T4>> Do<T1, T2, T3, T4>(this IObservable<ValueTuple<T1, T2, T3, T4>> source, Action<T1, T2, T3, T4> onNext)
+        {
+            return source.Do(tuple => onNext(tuple.Item1, tuple.Item2, tuple.Item3, tuple.Item4));
         }
 
         public static IObservable<T> DoOnError<T>(this IObservable<T> source, Action<Exception> onError)

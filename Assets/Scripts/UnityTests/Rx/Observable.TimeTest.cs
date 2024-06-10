@@ -308,7 +308,6 @@ namespace UniRx.Tests
         public void DelayCompleteTest()
         {
             var now = Scheduler.ThreadPool.Now;
-
             var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
                 .Take(4)
                 .Where(c => c < 3)
@@ -320,17 +319,14 @@ namespace UniRx.Tests
 
             xs[0].Value.Kind.Is(NotificationKind.OnNext);
             xs[0].Value.Value.Is(0);
-            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
             xs[1].Value.Kind.Is(NotificationKind.OnNext);
             xs[1].Value.Value.Is(1);
-            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
-
             xs[2].Value.Kind.Is(NotificationKind.OnNext);
             xs[2].Value.Value.Is(2);
-            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
-
             xs[3].Value.Kind.Is(NotificationKind.OnCompleted);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
+            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
             (now.AddMilliseconds(2300) <= xs[3].Timestamp && xs[3].Timestamp <= now.AddMilliseconds(2700)).IsTrue();
         }
 
@@ -338,7 +334,6 @@ namespace UniRx.Tests
         public void DelayErrorTest()
         {
             var now = Scheduler.ThreadPool.Now;
-
             var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
                 .Take(4)
                 .Do(c =>
@@ -355,89 +350,95 @@ namespace UniRx.Tests
                 .Wait();
 
             (xs.Length <= 3).IsTrue();
-
-            xs[0].Value.Kind.Is(NotificationKind.OnNext);
-            xs[0].Value.Value.Is(0);
+            xs[xs.Length - 1].Value.Kind.Is(NotificationKind.OnError);
             (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
-            var last = xs[xs.Length - 1];
-            last.Value.Kind.Is(NotificationKind.OnError);
-            (now.AddMilliseconds(1300) <= last.Timestamp && last.Timestamp <= now.AddMilliseconds(1700)).IsTrue();
+            (now.AddMilliseconds(1300) <= xs[xs.Length - 1].Timestamp && xs[xs.Length - 1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
         }
 
         [UnityTest]
-        public IEnumerator ScaledDelayTest()
+        public IEnumerator ScaledDownDelayTest()
         {
             const float Period = 2f;
-            const float HighTimeScale = 2f;
-            const float LowTimeScale = 0.5f;
-            const float ErrorMs = 200;
+            const float TimeScale = 0.5f;
+            const float Error = 0.2f;
             var scaledScheduler = Scheduler.MainThread;
 
-            Time.timeScale = HighTimeScale;
-            var timeOnStart = Time.unscaledTime;
-
             yield return null;
-
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
                 .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
                 .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
 
             var elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period / HighTimeScale - ErrorMs && ms < Period / HighTimeScale + ErrorMs);
-
-            Time.timeScale = LowTimeScale;
-            timeOnStart = Time.unscaledTime;
-
-            yield return Observable.ReturnUnit()
-                .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
-                .ToAwaitableEnumerator();
-
-            elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period / LowTimeScale - ErrorMs && ms < Period / LowTimeScale + ErrorMs);
-
-            Time.timeScale = 1f;
+            elapsed.Is(s => s > Period / TimeScale - Error && s < Period / TimeScale + Error);
         }
 
         [UnityTest]
-        public IEnumerator UnscaledDelayTest()
+        public IEnumerator ScaledUpDelayTest()
         {
             const float Period = 2f;
-            const float HighTimeScale = 2f;
-            const float LowTimeScale = 0.5f;
-            const float ErrorMs = 200;
-            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
-
-            Time.timeScale = HighTimeScale;
-            var timeOnStart = Time.unscaledTime;
+            const float TimeScale = 2f;
+            const float Error = 0.2f;
+            var scaledScheduler = Scheduler.MainThread;
 
             yield return null;
-
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
-                .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .Delay(TimeSpan.FromSeconds(Period), scaledScheduler)
                 .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
 
             var elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+            elapsed.Is(s => s > Period / TimeScale - Error && s < Period / TimeScale + Error);
+        }
 
-            Time.timeScale = LowTimeScale;
-            timeOnStart = Time.unscaledTime;
+        [UnityTest]
+        public IEnumerator UnscaledDownDelayTest()
+        {
+            const float Period = 2f;
+            const float TimeScale = 0.5f;
+            const float Error = 0.2f;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
 
+            yield return null;
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
                 .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
                 .ToAwaitableEnumerator();
-
-            elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
-
             Time.timeScale = 1f;
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(s => s > Period - Error && s < Period + Error);
+        }
+
+        [UnityTest]
+        public IEnumerator UnscaledUpDelayTest()
+        {
+            const float Period = 2f;
+            const float TimeScale = 2f;
+            const float Error = 0.2f;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
+
+            yield return null;
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
+            yield return Observable.ReturnUnit()
+                .Delay(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(s => s > Period - Error && s < Period + Error);
         }
 
         [Test]
         public void DelayNonAllocCompleteTest()
         {
             var now = Scheduler.ThreadPool.Now;
-
             var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
                 .Take(4)
                 .Where(c => c < 3)
@@ -449,17 +450,14 @@ namespace UniRx.Tests
 
             xs[0].Value.Kind.Is(NotificationKind.OnNext);
             xs[0].Value.Value.Is(0);
-            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
             xs[1].Value.Kind.Is(NotificationKind.OnNext);
             xs[1].Value.Value.Is(1);
-            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
-
             xs[2].Value.Kind.Is(NotificationKind.OnNext);
             xs[2].Value.Value.Is(2);
-            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
-
             xs[3].Value.Kind.Is(NotificationKind.OnCompleted);
+            (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
+            (now.AddMilliseconds(1300) <= xs[1].Timestamp && xs[1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
+            (now.AddMilliseconds(1800) <= xs[2].Timestamp && xs[2].Timestamp <= now.AddMilliseconds(2200)).IsTrue();
             (now.AddMilliseconds(2300) <= xs[3].Timestamp && xs[3].Timestamp <= now.AddMilliseconds(2700)).IsTrue();
         }
 
@@ -467,7 +465,6 @@ namespace UniRx.Tests
         public void DelayNonAllocErrorTest()
         {
             var now = Scheduler.ThreadPool.Now;
-
             var xs = Observable.Timer(TimeSpan.Zero, TimeSpan.FromMilliseconds(500))
                 .Take(4)
                 .Do(c =>
@@ -484,119 +481,119 @@ namespace UniRx.Tests
                 .Wait();
 
             (xs.Length <= 3).IsTrue();
-
             xs[0].Value.Kind.Is(NotificationKind.OnNext);
-            xs[0].Value.Value.Is(0);
+            xs[xs.Length - 1].Value.Kind.Is(NotificationKind.OnError);
             (now.AddMilliseconds(800) <= xs[0].Timestamp && xs[0].Timestamp <= now.AddMilliseconds(1200)).IsTrue();
-
-            var last = xs[xs.Length - 1];
-            last.Value.Kind.Is(NotificationKind.OnError);
-            (now.AddMilliseconds(1300) <= last.Timestamp && last.Timestamp <= now.AddMilliseconds(1700)).IsTrue();
+            (now.AddMilliseconds(1300) <= xs[xs.Length - 1].Timestamp && xs[xs.Length - 1].Timestamp <= now.AddMilliseconds(1700)).IsTrue();
         }
 
+
         [UnityTest]
-        public IEnumerator ScaledDelayNonAllocTest()
+        public IEnumerator ScaledDownDelayNonAllocTest()
         {
             const float Period = 2f;
-            const float HighTimeScale = 2f;
-            const float LowTimeScale = 0.5f;
-            const float ErrorMs = 200;
+            const float TimeScale = 0.5f;
+            const float Error = 0.2f;
             var scaledScheduler = Scheduler.MainThread;
 
-            Time.timeScale = HighTimeScale;
-            var timeOnStart = Time.unscaledTime;
-
             yield return null;
-
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
                 .DelayNonAlloc(TimeSpan.FromSeconds(Period), scaledScheduler)
                 .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
 
             var elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period / HighTimeScale - ErrorMs && ms < Period / HighTimeScale + ErrorMs);
-
-            Time.timeScale = LowTimeScale;
-            timeOnStart = Time.unscaledTime;
-
-            yield return Observable.ReturnUnit()
-                .DelayNonAlloc(TimeSpan.FromSeconds(Period), scaledScheduler)
-                .ToAwaitableEnumerator();
-
-            elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period / LowTimeScale - ErrorMs && ms < Period / LowTimeScale + ErrorMs);
-
-            Time.timeScale = 1f;
+            elapsed.Is(s => s > Period / TimeScale - Error && s < Period / TimeScale + Error);
         }
 
         [UnityTest]
-        public IEnumerator UnscaledDelayNonAllocTest()
+        public IEnumerator ScaledUpDelayNonAllocTest()
         {
             const float Period = 2f;
-            const float HighTimeScale = 2f;
-            const float LowTimeScale = 0.5f;
-            const float ErrorMs = 200;
-            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
-
-            Time.timeScale = HighTimeScale;
-            var timeOnStart = Time.unscaledTime;
+            const float TimeScale = 2f;
+            const float Error = 0.2f;
+            var scaledScheduler = Scheduler.MainThread;
 
             yield return null;
-
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
-                .DelayNonAlloc(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), scaledScheduler)
                 .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
 
             var elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
+            elapsed.Is(s => s > Period / TimeScale - Error && s < Period / TimeScale + Error);
+        }
 
-            Time.timeScale = LowTimeScale;
-            timeOnStart = Time.unscaledTime;
+        [UnityTest]
+        public IEnumerator UnscaledDownDelayNonAllocTest()
+        {
+            const float Period = 2f;
+            const float TimeScale = 0.5f;
+            const float Error = 200;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
 
+            yield return null;
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
             yield return Observable.ReturnUnit()
                 .DelayNonAlloc(TimeSpan.FromSeconds(Period), unscaledScheduler)
                 .ToAwaitableEnumerator();
-
-            elapsed = Time.unscaledTime - timeOnStart;
-            elapsed.Is(ms => ms > Period - ErrorMs && ms < Period + ErrorMs);
-
             Time.timeScale = 1f;
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(s => s > Period - Error && s < Period + Error);
+        }
+
+        [UnityTest]
+        public IEnumerator UnscaledUpDelayNonAllocTest()
+        {
+            const float Period = 2f;
+            const float TimeScale = 2f;
+            const float Error = 0.2f;
+            var unscaledScheduler = Scheduler.MainThreadIgnoreTimeScale;
+
+            yield return null;
+            Time.timeScale = TimeScale;
+            var timeOnStart = Time.unscaledTime;
+            yield return Observable.ReturnUnit()
+                .DelayNonAlloc(TimeSpan.FromSeconds(Period), unscaledScheduler)
+                .ToAwaitableEnumerator();
+            Time.timeScale = 1f;
+
+            var elapsed = Time.unscaledTime - timeOnStart;
+            elapsed.Is(s => s > Period - Error && s < Period + Error);
         }
 
         [UnityTest]
         public IEnumerator DateTimeOffsetTimerTest()
         {
             const float TimeScale = 2f;
+            const float DueTime = 1f;
+            const float Period = 0.5f;
+            const float Error = 0.2f;
             var realtimeScheduler = Scheduler.MainThreadSystemTime;
             var scaledScheduler = Scheduler.MainThread;
-
             var timeOnStart = DateTimeOffset.Now;
-            var dueTime = TimeSpan.FromSeconds(1f);
-            var period = TimeSpan.FromSeconds(0.5f);
-            var error = TimeSpan.FromSeconds(0.2f);
-
-            Time.timeScale = TimeScale;
 
             yield return null;
-
+            Time.timeScale = TimeScale;
             Timestamped<long>[] emittedValues = null;
-            yield return Observable.Timer(timeOnStart + dueTime, period, realtimeScheduler, scaledScheduler)
-                .Take(10)
+            yield return Observable.Timer(timeOnStart.AddSeconds(DueTime), TimeSpan.FromSeconds(Period), realtimeScheduler, scaledScheduler)
+                .Take(4)
                 .Timestamp()
                 .ToArray()
                 .Do(values => emittedValues = values)
                 .ToAwaitableEnumerator();
-
             Time.timeScale = 1f;
 
-            var prevTime = timeOnStart;
-            for (var i = 0; i < emittedValues.Length; i++)
-            {
-                var expectedDelta = i == 0 ? dueTime : TimeSpan.FromSeconds(period.TotalSeconds / TimeScale);
-                var expectedTime = prevTime + expectedDelta;
-                prevTime = expectedTime;
-                emittedValues[i].Timestamp.Is(t => t > expectedTime - error && t < expectedTime + error);
-            }
-
+            emittedValues[0].Timestamp.Is(t => Math.Abs((t - timeOnStart).TotalSeconds - 1f) < Error); // SystemTimeMainThreadScheduler is default for dueTo
+            emittedValues[1].Timestamp.Is(t => Math.Abs((t - timeOnStart).TotalSeconds - 1.25f) < Error); // MainThreadScheduler is default for period
+            emittedValues[2].Timestamp.Is(t => Math.Abs((t - timeOnStart).TotalSeconds - 1.5f) < Error);
+            emittedValues[3].Timestamp.Is(t => Math.Abs((t - timeOnStart).TotalSeconds - 1.75f) < Error);
         }
 
         [UnityTest]
@@ -613,6 +610,8 @@ namespace UniRx.Tests
                 .ToAwaitableEnumerator();
 
             emittedValues.Length.Is(2);
+            emittedValues[0].Is(0);
+            emittedValues[1].Is(2);
         }
 
         [UnityTest]
@@ -620,12 +619,17 @@ namespace UniRx.Tests
         {
             yield return null;
             var period = TimeSpan.FromSeconds(1f);
+            long[] emittedValues = null;
             yield return Observable.Interval(period, Scheduler.MainThread)
                 .Take(4)
-                .ThrottleFirst(period, Scheduler.MainThreadEndOfFrame)
+                .ThrottleFirstNonAlloc(period, Scheduler.MainThreadEndOfFrame)
                 .ToArray()
-                .Do(array => array.Length.Is(2))
+                .Do(array => emittedValues = array)
                 .ToAwaitableEnumerator();
+
+            emittedValues.Length.Is(2);
+            emittedValues[0].Is(0);
+            emittedValues[1].Is(2);
         }
     }
 }
